@@ -9,6 +9,9 @@ if (-not (Get-Command git -ErrorAction SilentlyContinue)) {
 if (-not (Test-Path .git)) {
     git init
 }
+# Default branch is main (matches GitHub and the configured push upstream).
+git branch -M main
+
 git add .
 $status = git status --porcelain
 if ($status) {
