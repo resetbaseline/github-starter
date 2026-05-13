@@ -59,3 +59,8 @@ where table_schema = 'public' and table_name = 'users' and column_name = 'pro';
 select column_name, data_type, column_default
 from information_schema.columns
 where table_schema = 'public' and table_name = 'gate_triggers' and column_name = 'mismatch_flagged';
+
+-- 12) After migration 002: gate_triggers.reason_classification (nullable text)
+select column_name, data_type
+from information_schema.columns
+where table_schema = 'public' and table_name = 'gate_triggers' and column_name = 'reason_classification';

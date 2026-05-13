@@ -86,6 +86,7 @@ export async function gateValidate(
 
   let timeGranted = 0;
   let coachResponse = "";
+  let reasonClassification: string | null = null;
 
   if (isFocusBlock) {
     timeGranted = 0;
@@ -109,6 +110,7 @@ export async function gateValidate(
       64,
     );
     const classification = parseClassification(cls.content);
+    reasonClassification = classification;
 
     let grant = baseGrantSeconds(classification);
     grant = applyEscalation(grant, priorCount);
@@ -168,6 +170,7 @@ export async function gateValidate(
       time_granted_seconds: timeGranted,
       active_non_negotiable: input.active_non_negotiable,
       streak_at_trigger: streakCount,
+      reason_classification: reasonClassification,
     })
     .select("id")
     .single();

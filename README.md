@@ -168,7 +168,7 @@ You should see your project in `supabase projects list`.
 
   - `app_bundle_id`, `app_name`, `trigger_source`, `stated_reason` (string), `active_non_negotiable` (string or null)
 
-- **Behavior:** Resolves **today** from `users.timezone`, loads/creates `days`, reads `streaks.current_count` and `days.gate_triggers` (pre-trigger count). If `trigger_source === "focus_block"`, grant is **0** and coach copy explains the block; otherwise **Haiku** classifies the reason (`specific_legitimate` | `plausible` | `vague` | `low_legitimacy`), applies base seconds + escalation tiers + historical mismatch penalty (ILIKE on first word, `usage_ratio > 0.8`), then **Haiku** coach reply (max 2 sentences; full coach voice rules in [`_shared/coach-voice.ts`](baseline/supabase/functions/_shared/coach-voice.ts)). Inserts `gate_triggers` and increments `days.gate_triggers` via **service role**.
+- **Behavior:** Resolves **today** from `users.timezone`, loads/creates `days`, reads `streaks.current_count` and `days.gate_triggers` (pre-trigger count). If `trigger_source === "focus_block"`, grant is **0** and coach copy explains the block; otherwise **Haiku** classifies the reason (`specific_legitimate` | `plausible` | `vague` | `low_legitimacy`), applies base seconds + escalation tiers + historical mismatch penalty (ILIKE on first word, `usage_ratio > 0.8`), then **Haiku** coach reply (max 2 sentences; full coach voice rules in [`_shared/coach-voice.ts`](baseline/supabase/functions/_shared/coach-voice.ts)). Inserts `gate_triggers` (including `reason_classification` when not focus-block) and increments `days.gate_triggers` via **service role**. Requires migration **002** for `reason_classification`.
 
 - **Secrets:** `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, plus standard Supabase URL/keys.
 
@@ -190,6 +190,29 @@ You should see your project in `supabase projects list`.
 - **Tests:** `deno test baseline/supabase/functions/gate-validate/grant.test.ts baseline/supabase/functions/gate-validate/parse.test.ts`
 
 - **Deploy:** `supabase functions deploy gate-validate`
+
+## C5 — `gate-resolve` Edge Function
+
+- **Source:** [`baseline/supabase/functions/gate-resolve/`](baseline/supabase/functions/gate-resolve/).
+- **Migration:** [`baseline/supabase/migrations/002_gate_trigger_reason_classification.sql`](baseline/supabase/migrations/002_gate_trigger_reason_classification.sql) adds `gate_triggers.reason_classification` (set by [`gate-validate`](baseline/supabase/functions/gate-validate/handler.ts) for mismatch logic). Run `supabase db push` (or apply SQL) before relying on `mismatch_flagged`.
+
+- **Method:** `POST` + `OPTIONS`. Body:
+
+  - `gate_trigger_id` (uuid)
+  - `time_used_seconds` (number, ≥ 0)
+  - `outcome`: `dismissed` | `timed_access` | `focus_block_active`
+
+- **Behavior:** Loads the trigger with the **user JWT** (RLS). Rejects if missing or already `resolved_at`. Computes `usage_ratio` (`null` if `time_granted_seconds` is 0 to avoid divide-by-zero). **Service role** updates `gate_triggers` (`time_used_seconds`, `usage_ratio`, `resolved_at`, `outcome`, `mismatch_flagged`). Sets `mismatch_flagged` when `usage_ratio > 0.8` and `reason_classification` is `specific_legitimate` or `plausible`. If `outcome === dismissed`, increments `days.gate_dismissals` for the trigger’s `day_id`.
+
+- **Response `data`:** `{ success: true, usage_ratio, mismatch_flagged }`.
+
+- **Secrets:** `SUPABASE_SERVICE_ROLE_KEY` + standard Supabase URL/keys.
+
+- **Local serve:** `supabase functions serve gate-resolve`
+
+- **Tests:** `deno test baseline/supabase/functions/gate-resolve/logic.test.ts baseline/supabase/functions/gate-resolve/parse.test.ts`
+
+- **Deploy:** `supabase functions deploy gate-resolve`
 
 ## Git remote
 
