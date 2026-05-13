@@ -248,6 +248,15 @@ You should see your project in `supabase projects list`.
 - **Tests:** `deno test baseline/supabase/functions/update-coach-memory/json-utils.test.ts`
 - **Deploy:** `supabase functions deploy update-coach-memory`
 
+## C9 — `generate-pattern-insight` Edge Function
+
+- **Source:** [`baseline/supabase/functions/generate-pattern-insight/`](baseline/supabase/functions/generate-pattern-insight/).
+- **Method:** `POST` + `OPTIONS`. Body: `{ week_start?, user_id? }` — optional `week_start` is `YYYY-MM-DD` in the user’s timezone (validated and normalized to the **Monday** starting that ISO week). Optional `user_id` must match the JWT when present. If omitted, the week is the one containing **today** in `users.timezone`.
+- **Behavior:** If a `pattern_insights` row already exists for `(user_id, week_start)`, returns it with `duplicate: true` (no second LLM call). Otherwise loads **days** in that week, **goals**, **gate_triggers** (including `reason_classification` when migration 002 is applied), **check_ins**, **coach_memory_profile** snippet, and **streaks**. **Sonnet** + coach voice system prompt produce `insight_text`; insert uses **service role** (`pattern_insights` is SELECT-only for users in RLS).
+- **Secrets:** `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- **Serve:** `supabase functions serve generate-pattern-insight`
+- **Deploy:** `supabase functions deploy generate-pattern-insight`
+
 ## Git remote
 
 ```bash
