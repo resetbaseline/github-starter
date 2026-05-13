@@ -384,6 +384,9 @@ verify_jwt = true
 [functions.generate-coach-checkin-note]
 verify_jwt = true
 
+[functions.update-coach-memory]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

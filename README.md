@@ -237,6 +237,17 @@ You should see your project in `supabase projects list`.
 - **Tests:** `deno test baseline/supabase/functions/generate-coach-checkin-note/logic.test.ts`
 - **Deploy:** `supabase functions deploy generate-coach-checkin-note`
 
+## C8 — `update-coach-memory` Edge Function
+
+- **Source:** [`baseline/supabase/functions/update-coach-memory/`](baseline/supabase/functions/update-coach-memory/).
+- **Method:** `POST` + `OPTIONS`. Body: `{ user_id, session_id }` (UUIDs). `user_id` must match the JWT subject.
+- **Behavior:** Loads `coach_messages` for that `session_id` (ordered by `created_at`). If there are no rows, returns `{ success: true, skipped: true }` (useful when internal callers pass a correlation id that does not match chat `session_id`). Otherwise **Haiku** extracts structured facts (goals, struggles, wins, windows, notes, tone), **service role** merges into `coach_memory_profile` (including `goals_summary` JSON), updates matching **`user_goals.current_status`** when names align, **Haiku** writes a 3–5 sentence journal summary, **user JWT** inserts **`coach_session_journal`**. If there are more than **14** uncompressed journal rows older than **14 days**, groups them by calendar month and **Haiku** compresses each month; **service role** sets `compression_summary` and `compressed` on those rows (RLS has no journal `UPDATE` for users).
+- **Secrets:** `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- **Internal calls:** [`process-checkin`](baseline/supabase/functions/process-checkin/handler.ts) invokes this with the caller’s `Authorization` header; for memory and journal updates to run, `session_id` should be the same UUID used in `coach_messages` for that chat (not necessarily the check-in id).
+- **Serve:** `supabase functions serve update-coach-memory`
+- **Tests:** `deno test baseline/supabase/functions/update-coach-memory/json-utils.test.ts`
+- **Deploy:** `supabase functions deploy update-coach-memory`
+
 ## Git remote
 
 ```bash
