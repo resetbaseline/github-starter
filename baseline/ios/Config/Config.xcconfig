@@ -1,0 +1,6 @@
+// Base config included by the Xcode project. Optional local overrides (secrets, per-machine URLs).
+#include? "Config.local.xcconfig"
+
+// Defaults so builds succeed before Config.local exists; override in Config.local.xcconfig.
+SUPABASE_URL = https://YOUR_REF.supabase.co
+SUPABASE_ANON_KEY = your_anon_key_here

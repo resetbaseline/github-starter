@@ -276,6 +276,10 @@ You should see your project in `supabase projects list`.
 - **Serve:** `supabase functions serve send-push-notification`
 - **Deploy:** `supabase functions deploy send-push-notification`
 
+## Baseline iOS app
+
+- **Source:** [`baseline/ios/`](baseline/ios/) — SwiftUI (iOS 17+), Supabase Swift via SPM, `Config.xcconfig` + optional gitignored `Config.local.xcconfig` for `SUPABASE_URL` / `SUPABASE_ANON_KEY`. Open **`Baseline.xcodeproj`** on a Mac to build; regenerate the project with `node baseline/ios/scripts/generate_xcode_project.mjs` after adding/removing Swift files. Details: [`baseline/ios/README.md`](baseline/ios/README.md).
+
 ## Git remote
 
 ```bash

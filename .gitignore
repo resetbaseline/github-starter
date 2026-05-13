@@ -25,6 +25,12 @@ temp/
 baseline/tools/supabase-cli/supabase.exe
 baseline/supabase/.temp/
 
+# Baseline iOS (Xcode / secrets)
+baseline/ios/**/xcuserdata/
+baseline/ios/**/DerivedData/
+baseline/ios/**/*.xcuserstate
+baseline/ios/Config/Config.local.xcconfig
+
 # Dependencies
 node_modules/
 # __pycache__/
