@@ -214,6 +214,18 @@ You should see your project in `supabase projects list`.
 
 - **Deploy:** `supabase functions deploy gate-resolve`
 
+## C6 — `coach-message` Edge Function
+
+- **Source:** [`baseline/supabase/functions/coach-message/`](baseline/supabase/functions/coach-message/).
+- **Method:** `POST` + `OPTIONS`. Body: `{ session_type, message, session_id, day_id }` (`session_type` is `checkin` | `stuck` | `planning` | `freeform` | `insight` | `gate`; UUIDs for `session_id` and `day_id`).
+- **Rate limit:** Free users (`users.pro = false`): max **3 distinct `session_id`** values in `coach_messages` per **calendar day** in `users.timezone`. Pro: unlimited (`sessions_remaining` is `null` on success).
+- **Models:** `checkin` and `insight` → **Sonnet**; others → **Haiku**. System prompt order: coach voice → memory profile → journal (up to 14 uncompressed entries, chronological) → today’s context → session-type instructions.
+- **Actions:** Parses `<action>...</action>` JSON after the model reply; supports `add_goal`, `update_schedule`, `set_tomorrow_intention`, `start_focus_block` (see [`actions.ts`](baseline/supabase/functions/coach-message/actions.ts)). Inserts **user** then **assistant** rows into `coach_messages`.
+- **Secrets:** `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY` (no service role).
+- **Serve:** `supabase functions serve coach-message`
+- **Tests:** `deno test baseline/supabase/functions/coach-message/logic.test.ts`
+- **Deploy:** `supabase functions deploy coach-message`
+
 ## Git remote
 
 ```bash

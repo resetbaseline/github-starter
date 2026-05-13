@@ -1,0 +1,97 @@
+import { corsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
+import { createUserClient } from "../_shared/supabase-client.ts";
+import { coachMessage } from "./handler.ts";
+import { parseCoachMessageBody } from "./parse.ts";
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return handleCorsPreflightRequest();
+  }
+
+  if (req.method !== "POST") {
+    return json({ data: null, error: { message: "Method not allowed", code: "method_not_allowed" } }, 405);
+  }
+
+  let sb;
+  try {
+    sb = createUserClient(req);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const unauthorized = msg.includes("Authorization") || msg.includes("Bearer");
+    return json(
+      {
+        data: null,
+        error: { message: msg, code: unauthorized ? "unauthorized" : "configuration_error" },
+      },
+      unauthorized ? 401 : 500,
+    );
+  }
+
+  try {
+    const { data: userData, error: authErr } = await sb.auth.getUser();
+    if (authErr || !userData?.user) {
+      return json(
+        {
+          data: null,
+          error: {
+            message: authErr?.message ?? "Invalid or expired JWT",
+            code: "invalid_jwt",
+            detail: authErr?.name,
+          },
+        },
+        401,
+      );
+    }
+
+    const userId = userData.user.id;
+
+    let raw: unknown;
+    try {
+      raw = await req.json();
+    } catch {
+      return json({ data: null, error: { message: "Invalid JSON body", code: "invalid_json" } }, 400);
+    }
+
+    const parsed = parseCoachMessageBody(raw);
+    if (!parsed.ok) {
+      return json({ data: null, error: { message: parsed.error, code: "validation_error" } }, 400);
+    }
+
+    const result = await coachMessage(sb, userId, parsed.value);
+
+    if (result.error) {
+      if (result.error.code === "rate_limit_exceeded") {
+        return json(
+          {
+            data: null,
+            error: {
+              message: result.error.message,
+              code: "rate_limit_exceeded",
+              sessions_remaining: result.error.sessions_remaining ?? 0,
+            },
+          },
+          429,
+        );
+      }
+      if (result.error.code === "day_not_found") {
+        return json({ data: null, error: result.error }, 404);
+      }
+      if (result.error.code === "anthropic_error") {
+        return json({ data: null, error: result.error }, 502);
+      }
+      return json({ data: null, error: result.error }, 400);
+    }
+
+    return json({ data: result.data, error: null }, 200);
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return json({ data: null, error: { message: msg, code: "internal_error" } }, 500);
+  }
+});

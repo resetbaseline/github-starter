@@ -378,6 +378,9 @@ verify_jwt = true
 [functions.gate-resolve]
 verify_jwt = true
 
+[functions.coach-message]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
