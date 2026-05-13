@@ -266,6 +266,16 @@ You should see your project in `supabase projects list`.
 - **Serve:** `supabase functions serve generate-identity-mirror`
 - **Deploy:** `supabase functions deploy generate-identity-mirror`
 
+## C11 — `send-push-notification` Edge Function
+
+- **Source:** [`baseline/supabase/functions/send-push-notification/`](baseline/supabase/functions/send-push-notification/).
+- **Method:** `POST` + `OPTIONS`. Body: `{ title, body, user_id?, data?, notification_type?, badge?, sound? }` — `title` / `body` are required strings (length limits in [`parse.ts`](baseline/supabase/functions/send-push-notification/parse.ts)). `notification_type` must match the Postgres `notification_type` enum when provided. Custom `data` is nested under the APNs payload key `baseline.client`.
+- **Auth:** **User JWT** — sends to the caller’s devices (`notification_tokens.apns_token`); optional `user_id` must equal the JWT subject. **Service role JWT** (same `Authorization: Bearer` value as `SUPABASE_SERVICE_ROLE_KEY`) — requires **`user_id`** for the target user (for cron/server jobs); treat the service key as highly sensitive.
+- **Behavior:** Respects `users.notifications_enabled`. Loads all `notification_tokens` for the target user. If none: `{ sent: 0, skipped: "no_tokens" }`. If APNs env is incomplete: **503** `apns_not_configured`. Otherwise mints an APNs **provider JWT** (ES256 via [`jose`](https://github.com/panva/jose), cached ~45m) and POSTs to Apple (`api.push.apple.com` or sandbox when `APNS_USE_SANDBOX=true`). **410** responses remove the stale token row.
+- **Secrets:** `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (for service path + `createServiceClient`), plus **APNS_KEY_ID**, **APNS_TEAM_ID**, **APNS_BUNDLE_ID**, and **APNS_SIGNING_KEY** or **`APNS_PRIVATE_KEY`** (`.p8` PEM; newlines may be escaped as `\n` in secrets). Optional: **APNS_USE_SANDBOX**.
+- **Serve:** `supabase functions serve send-push-notification`
+- **Deploy:** `supabase functions deploy send-push-notification`
+
 ## Git remote
 
 ```bash
