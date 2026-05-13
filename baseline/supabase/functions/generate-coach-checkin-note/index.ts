@@ -1,7 +1,7 @@
 import { corsHeaders, handleCorsPreflightRequest } from "../_shared/cors.ts";
 import { createServiceClient, createUserClient } from "../_shared/supabase-client.ts";
-import { parseProcessCheckinBody } from "./logic.ts";
-import { processCheckIn } from "./handler.ts";
+import { generateCoachCheckinNote } from "./handler.ts";
+import { parseGenerateCheckinNoteBody } from "./parse.ts";
 
 function json(body: unknown, status = 200): Response {
   return new Response(JSON.stringify(body), {
@@ -61,21 +61,18 @@ Deno.serve(async (req) => {
       return json({ data: null, error: { message: "Invalid JSON body", code: "invalid_json" } }, 400);
     }
 
-    const parsed = parseProcessCheckinBody(raw);
+    const parsed = parseGenerateCheckinNoteBody(raw);
     if (!parsed.ok) {
       return json({ data: null, error: { message: parsed.error, code: "validation_error" } }, 400);
     }
 
-    const result = await processCheckIn(userSb, serviceSb, userId, parsed.value, req.headers.get("Authorization") ?? "");
+    const result = await generateCoachCheckinNote(userSb, serviceSb, userId, parsed.value);
 
     if (result.error) {
-      const code = result.error.code;
-      const status =
-        code === "already_submitted" ? 409
-        : code === "day_not_found" ? 404
-        : code === "streak_freeze_unavailable" ? 400
-        : 400;
-      return json({ data: null, error: result.error }, status);
+      if (result.error.code === "day_not_found") return json({ data: null, error: result.error }, 404);
+      if (result.error.code === "forbidden") return json({ data: null, error: result.error }, 403);
+      if (result.error.code === "anthropic_error") return json({ data: null, error: result.error }, 502);
+      return json({ data: null, error: result.error }, 400);
     }
 
     return json({ data: result.data, error: null }, 200);

@@ -138,7 +138,7 @@ You should see your project in `supabase projects list`.
   - `tomorrow_timeblocks`: `{ title, start_time, end_time, color_hex }[]` (`HH:MM` or `HH:MM:SS`)
   - `streak_freeze_used`: boolean
 
-- **Behavior:** Validates coverage, classifies `won` / `lost` / `skipped`, updates `goals` + `days`, inserts `check_ins`, applies streak / freeze / perfect-day rules via **service role**, upserts **tomorrow’s** `days` row, inserts `time_blocks` for tomorrow, then fire-and-forgets `generate-coach-checkin-note` and `update-coach-memory` (ignored if those functions are not deployed yet).
+- **Behavior:** Validates coverage, classifies `won` / `lost` / `skipped`, updates `goals` + `days`, inserts `check_ins`, applies streak / freeze / perfect-day rules via **service role**, upserts **tomorrow’s** `days` row, inserts `time_blocks` for tomorrow, then fire-and-forgets `generate-coach-checkin-note` and `update-coach-memory` with the **same `Authorization` header** as the check-in request so those functions run as the user (JWT).
 
 - **Secrets:** Edge runtime must have `SUPABASE_SERVICE_ROLE_KEY` (Dashboard → Edge Functions → Secrets) because this function uses `createServiceClient()`.
 
@@ -225,6 +225,17 @@ You should see your project in `supabase projects list`.
 - **Serve:** `supabase functions serve coach-message`
 - **Tests:** `deno test baseline/supabase/functions/coach-message/logic.test.ts`
 - **Deploy:** `supabase functions deploy coach-message`
+
+## C7 — `generate-coach-checkin-note` Edge Function
+
+- **Source:** [`baseline/supabase/functions/generate-coach-checkin-note/`](baseline/supabase/functions/generate-coach-checkin-note/).
+- **Method:** `POST` + `OPTIONS`. Body: `{ day_id, user_id? }` — optional `user_id` must match the JWT user when present.
+- **Behavior:** Loads the **day** (full row), **goals** for that day, **gate_triggers** rows for gate-callout logic, **streak** `current_count`. Computes whether a **Gate callout** is warranted (`days.gate_triggers >= 5` or any same-day trigger with `usage_ratio > 0.8` and `reason_classification` in `plausible` / `specific_legitimate`). Builds a Haiku prompt (max 3 sentences; coach voice + concrete data). If `gate_dismissals > 0`, prompt asks to acknowledge wins; if heuristics suggest a rough day, adds one **tomorrow block** suggestion. **`callHaiku`** then **`days.coach_check_in_note`** is updated via **service role** (bypasses RLS while still scoping `eq` on `user_id`).
+- **Secrets:** `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- **Internal calls:** [`process-checkin`](baseline/supabase/functions/process-checkin/handler.ts) forwards the caller’s `Authorization` header on `functions.invoke` so this function receives a valid user JWT.
+- **Serve:** `supabase functions serve generate-coach-checkin-note`
+- **Tests:** `deno test baseline/supabase/functions/generate-coach-checkin-note/logic.test.ts`
+- **Deploy:** `supabase functions deploy generate-coach-checkin-note`
 
 ## Git remote
 

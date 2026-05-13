@@ -27,13 +27,23 @@ type StreakRow = {
   start_date: string;
 };
 
-function fireAndForgetInternalFunctions(service: SupabaseClient, userId: string, dayId: string, checkInId: string) {
+function fireAndForgetInternalFunctions(
+  service: SupabaseClient,
+  userId: string,
+  dayId: string,
+  checkInId: string,
+  authorizationHeader: string,
+) {
+  const headers = authorizationHeader ? { Authorization: authorizationHeader } : undefined;
+
   void service.functions.invoke("generate-coach-checkin-note", {
     body: { day_id: dayId, user_id: userId },
+    headers,
   }).catch(() => undefined);
 
   void service.functions.invoke("update-coach-memory", {
     body: { user_id: userId, session_id: checkInId },
+    headers,
   }).catch(() => undefined);
 }
 
@@ -42,6 +52,7 @@ export async function processCheckIn(
   serviceSb: SupabaseClient,
   userId: string,
   input: ProcessCheckinInput,
+  authorizationHeader: string,
 ): Promise<{ data: ProcessCheckinSuccess | null; error: ProcessCheckinError | null }> {
   const { data: existingCheckin, error: existingErr } = await userSb
     .from("check_ins")
@@ -322,7 +333,7 @@ export async function processCheckIn(
     }
   }
 
-  fireAndForgetInternalFunctions(serviceSb, userId, input.day_id, checkInId);
+  fireAndForgetInternalFunctions(serviceSb, userId, input.day_id, checkInId, authorizationHeader);
 
   const { data: streakOut, error: soErr } = await userSb.from("streaks").select("current_count,max_count,active").eq("user_id", userId).single();
   if (soErr) {
