@@ -369,6 +369,9 @@ allow_dynamic_registration = false
 [functions.get-or-create-day]
 verify_jwt = true
 
+[functions.process-checkin]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

@@ -126,6 +126,41 @@ You should see your project in `supabase projects list`.
 
 - **Dashboard:** Project → Edge Functions → confirm `get-or-create-day` listed; logs show requests. Set secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY` (and others) as needed for your project defaults.
 
+## C3 — `process-checkin` Edge Function
+
+- **Source:** [`baseline/supabase/functions/process-checkin/`](baseline/supabase/functions/process-checkin/).
+- **Method:** `POST` only (`OPTIONS` preflight). Body (JSON):
+
+  - `day_id` (uuid)
+  - `goal_outcomes`: `{ goal_id, completed }[]` (must include every goal for that day)
+  - `reflection_answers`: `{ question_text, answer, category }[]`
+  - `tomorrow_intention`: string or `null`
+  - `tomorrow_timeblocks`: `{ title, start_time, end_time, color_hex }[]` (`HH:MM` or `HH:MM:SS`)
+  - `streak_freeze_used`: boolean
+
+- **Behavior:** Validates coverage, classifies `won` / `lost` / `skipped`, updates `goals` + `days`, inserts `check_ins`, applies streak / freeze / perfect-day rules via **service role**, upserts **tomorrow’s** `days` row, inserts `time_blocks` for tomorrow, then fire-and-forgets `generate-coach-checkin-note` and `update-coach-memory` (ignored if those functions are not deployed yet).
+
+- **Secrets:** Edge runtime must have `SUPABASE_SERVICE_ROLE_KEY` (Dashboard → Edge Functions → Secrets) because this function uses `createServiceClient()`.
+
+- **Local serve:**
+
+  ```powershell
+  cd C:\Users\dowb\Projects\github-starter\baseline
+  supabase functions serve process-checkin --no-verify-jwt
+  ```
+
+- **Invoke (example):**
+
+  ```powershell
+  curl -s -X POST -H "Authorization: Bearer YOUR_ACCESS_TOKEN" -H "Content-Type: application/json" `
+    -d "{\"day_id\":\"...\",\"goal_outcomes\":[],\"reflection_answers\":[],\"tomorrow_intention\":null,\"tomorrow_timeblocks\":[],\"streak_freeze_used\":false}" `
+    http://127.0.0.1:54321/functions/v1/process-checkin
+  ```
+
+- **Tests:** `deno test --allow-env baseline/supabase/functions/process-checkin/logic.test.ts`
+
+- **Deploy:** `supabase functions deploy process-checkin`
+
 ## Git remote
 
 ```bash
