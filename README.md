@@ -101,8 +101,30 @@ You should see your project in `supabase projects list`.
 
    ```powershell
    cd C:\Users\dowb\Projects\github-starter\baseline\supabase\functions
-   deno test --allow-env _shared\*.test.ts
+   deno test --allow-env _shared\*.test.ts get-or-create-day\*.test.ts
    ```
+
+## C2 — `get-or-create-day` Edge Function
+
+- **Source:** [`baseline/supabase/functions/get-or-create-day/`](baseline/supabase/functions/get-or-create-day/) (`index.ts`, `handler.ts`, `dates.ts`).
+- **Behavior:** `GET` or `POST` with `Authorization: Bearer <access_token>`. Returns `{ data: { day, goals, timers, yesterday_intention }, error }`. Uses `users.timezone` for “today” / “yesterday”; creates today’s `days` row if missing (handles unique race).
+- **Local serve** (from `baseline/`, with `.env.local` or exported env):
+
+  ```powershell
+  supabase functions serve get-or-create-day --no-verify-jwt
+  ```
+
+  Omit `--no-verify-jwt` when you pass a real JWT and have JWT verification enabled.
+
+- **Invoke (example):**
+
+  ```powershell
+  curl -i -H "Authorization: Bearer YOUR_ACCESS_TOKEN" http://127.0.0.1:54321/functions/v1/get-or-create-day
+  ```
+
+- **Deploy:** `supabase functions deploy get-or-create-day`
+
+- **Dashboard:** Project → Edge Functions → confirm `get-or-create-day` listed; logs show requests. Set secrets `SUPABASE_URL`, `SUPABASE_ANON_KEY` (and others) as needed for your project defaults.
 
 ## Git remote
 
