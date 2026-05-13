@@ -82,9 +82,27 @@ powershell -ExecutionPolicy Bypass -File .\baseline\scripts\verify-supabase-link
 
 You should see your project in `supabase projects list`.
 
-### Next
+## C1 — schema, shared utilities, verify
 
-When setup is finished, say **“setup done, build C1”** to add the full schema migration, shared Edge Function utilities, and verification SQL.
+1. **Apply migration** (linked project):
+
+   ```powershell
+   cd C:\Users\dowb\Projects\github-starter\baseline
+   supabase db push
+   ```
+
+   Or paste [`baseline/supabase/migrations/001_initial_schema.sql`](baseline/supabase/migrations/001_initial_schema.sql) into **SQL Editor** and run once on a fresh project.
+
+2. **SQL checks**: open and run [`baseline/supabase/C1_VERIFICATION.sql`](baseline/supabase/C1_VERIFICATION.sql) — expect **20** public tables, **8** `reflection_questions` rows, `universal=3`, `won=2`, `lost=3`, and RLS enabled on all tables.
+
+3. **Shared Edge utilities** live in [`baseline/supabase/functions/_shared/`](baseline/supabase/functions/_shared/) (`cors.ts`, `supabase-client.ts`, `anthropic-client.ts`).
+
+4. **Deno tests** (install [Deno](https://deno.land/) if needed):
+
+   ```powershell
+   cd C:\Users\dowb\Projects\github-starter\baseline\supabase\functions
+   deno test --allow-env _shared\*.test.ts
+   ```
 
 ## Git remote
 
