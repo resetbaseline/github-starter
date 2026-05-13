@@ -390,6 +390,9 @@ verify_jwt = true
 [functions.generate-pattern-insight]
 verify_jwt = true
 
+[functions.generate-identity-mirror]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

@@ -257,6 +257,15 @@ You should see your project in `supabase projects list`.
 - **Serve:** `supabase functions serve generate-pattern-insight`
 - **Deploy:** `supabase functions deploy generate-pattern-insight`
 
+## C10 — `generate-identity-mirror` Edge Function
+
+- **Source:** [`baseline/supabase/functions/generate-identity-mirror/`](baseline/supabase/functions/generate-identity-mirror/).
+- **Method:** `POST` + `OPTIONS`. Body: `{ month_start?, user_id? }` — optional `month_start` is any valid `YYYY-MM-DD` in the user’s timezone; it is normalized to **`yyyy-mm-01`** for that calendar month. Optional `user_id` must match the JWT when present. If omitted, the month is the one containing **today** in `users.timezone`.
+- **Behavior:** If an `identity_mirror` row already exists for `(user_id, month_start)`, returns it with `duplicate: true` (no second LLM call). Otherwise loads **days** in that month, **goals**, **gate_triggers**, **check_ins**, **coach_memory_profile**, **streaks**, active **user_goals**, **pattern_insights** and **coach_session_journal** rows whose `created_at` falls in that month (half-open range from local midnight of `month_start` to local midnight of the next month). Builds a deterministic **`stats_summary` JSON** from aggregates; **Sonnet** + coach voice system prompt writes **`portrait_text`**. Insert uses **service role** (`identity_mirror` is SELECT-only for users in RLS).
+- **Secrets:** `ANTHROPIC_API_KEY`, `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+- **Serve:** `supabase functions serve generate-identity-mirror`
+- **Deploy:** `supabase functions deploy generate-identity-mirror`
+
 ## Git remote
 
 ```bash
