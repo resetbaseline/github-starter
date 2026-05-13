@@ -161,6 +161,36 @@ You should see your project in `supabase projects list`.
 
 - **Deploy:** `supabase functions deploy process-checkin`
 
+## C4 — `gate-validate` Edge Function
+
+- **Source:** [`baseline/supabase/functions/gate-validate/`](baseline/supabase/functions/gate-validate/).
+- **Method:** `POST` + `OPTIONS`. Body:
+
+  - `app_bundle_id`, `app_name`, `trigger_source`, `stated_reason` (string), `active_non_negotiable` (string or null)
+
+- **Behavior:** Resolves **today** from `users.timezone`, loads/creates `days`, reads `streaks.current_count` and `days.gate_triggers` (pre-trigger count). If `trigger_source === "focus_block"`, grant is **0** and coach copy explains the block; otherwise **Haiku** classifies the reason (`specific_legitimate` | `plausible` | `vague` | `low_legitimacy`), applies base seconds + escalation tiers + historical mismatch penalty (ILIKE on first word, `usage_ratio > 0.8`), then **Haiku** coach reply (max 2 sentences; full coach voice rules in [`_shared/coach-voice.ts`](baseline/supabase/functions/_shared/coach-voice.ts)). Inserts `gate_triggers` and increments `days.gate_triggers` via **service role**.
+
+- **Secrets:** `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, plus standard Supabase URL/keys.
+
+- **Local serve:**
+
+  ```powershell
+  cd C:\Users\dowb\Projects\github-starter\baseline
+  supabase functions serve gate-validate
+  ```
+
+- **Invoke (example):**
+
+  ```powershell
+  curl -s -X POST -H "Authorization: Bearer YOUR_ACCESS_TOKEN" -H "Content-Type: application/json" `
+    -d "{\"app_bundle_id\":\"com.test.app\",\"app_name\":\"Test\",\"trigger_source\":\"gate\",\"stated_reason\":\"I need to reply to one email\",\"active_non_negotiable\":null}" `
+    http://127.0.0.1:54321/functions/v1/gate-validate
+  ```
+
+- **Tests:** `deno test baseline/supabase/functions/gate-validate/grant.test.ts baseline/supabase/functions/gate-validate/parse.test.ts`
+
+- **Deploy:** `supabase functions deploy gate-validate`
+
 ## Git remote
 
 ```bash
