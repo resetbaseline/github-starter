@@ -12,12 +12,14 @@ export function gateCalloutWarranted(args: {
   });
 }
 
+/** Whether the coach note should push a concrete tomorrow adjustment. */
 export function tomorrowAdjustmentWarranted(args: {
   dayStatus: string;
   goalsCount: number;
   goalsCompleted: number;
 }): boolean {
-  if (args.dayStatus === "lost") return true;
+  if (args.dayStatus === "light") return true;
+  if (args.dayStatus === "rest" || args.dayStatus === "skipped") return false;
   if (args.goalsCount <= 0) return false;
   return args.goalsCompleted < Math.ceil(args.goalsCount * 0.5);
 }

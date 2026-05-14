@@ -26,7 +26,8 @@ Deno.test("gateCalloutWarranted by usage and classification", () => {
 });
 
 Deno.test("tomorrowAdjustmentWarranted", () => {
-  assertEquals(tomorrowAdjustmentWarranted({ dayStatus: "lost", goalsCount: 3, goalsCompleted: 2 }), true);
-  assertEquals(tomorrowAdjustmentWarranted({ dayStatus: "won", goalsCount: 4, goalsCompleted: 1 }), true);
-  assertEquals(tomorrowAdjustmentWarranted({ dayStatus: "won", goalsCount: 4, goalsCompleted: 3 }), false);
+  assertEquals(tomorrowAdjustmentWarranted({ dayStatus: "light", goalsCount: 3, goalsCompleted: 2 }), true);
+  assertEquals(tomorrowAdjustmentWarranted({ dayStatus: "strong", goalsCount: 4, goalsCompleted: 1 }), true);
+  assertEquals(tomorrowAdjustmentWarranted({ dayStatus: "strong", goalsCount: 4, goalsCompleted: 3 }), false);
+  assertEquals(tomorrowAdjustmentWarranted({ dayStatus: "rest", goalsCount: 4, goalsCompleted: 0 }), false);
 });

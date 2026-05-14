@@ -8,7 +8,7 @@ import {
   validateNonNegotiables,
   type GoalRow,
 } from "./logic.ts";
-import type { ProcessCheckinError, ProcessCheckinInput, ProcessCheckinSuccess } from "./types.ts";
+import type { DayStatus, ProcessCheckinError, ProcessCheckinInput, ProcessCheckinSuccess } from "./types.ts";
 
 type DayRow = {
   id: string;
@@ -45,6 +45,14 @@ function fireAndForgetInternalFunctions(
     body: { user_id: userId, session_id: checkInId },
     headers,
   }).catch(() => undefined);
+}
+
+function streakCountsForDay(dayStatus: DayStatus): boolean {
+  return dayStatus === "strong" || dayStatus === "solid";
+}
+
+function streakBreaksUnlessFreeze(dayStatus: DayStatus): boolean {
+  return dayStatus === "light";
 }
 
 export async function processCheckIn(
@@ -93,24 +101,30 @@ export async function processCheckIn(
   const goals = (goalRows ?? []) as GoalRow[];
   const outcomes = outcomeMap(input.goal_outcomes);
 
-  const coverageErr = validateGoalCoverage(goals, input.goal_outcomes);
-  if (coverageErr) {
-    return { data: null, error: { message: coverageErr, code: "invalid_goal_outcomes" } };
+  const isRestDay = input.rest_day === true;
+
+  if (!isRestDay) {
+    const coverageErr = validateGoalCoverage(goals, input.goal_outcomes);
+    if (coverageErr) {
+      return { data: null, error: { message: coverageErr, code: "invalid_goal_outcomes" } };
+    }
+
+    const nnErr = validateNonNegotiables(goals, outcomes);
+    if (nnErr) {
+      return { data: null, error: { message: nnErr, code: "invalid_goal_outcomes" } };
+    }
   }
 
-  const nnErr = validateNonNegotiables(goals, outcomes);
-  if (nnErr) {
-    return { data: null, error: { message: nnErr, code: "invalid_goal_outcomes" } };
-  }
+  const dayStatus: DayStatus = isRestDay
+    ? "rest"
+    : classifyDayResult({
+      goals,
+      outcomes,
+      reflectionCount: input.reflection_answers.length,
+      focusMinutesTotal: day.focus_minutes_total,
+    });
 
-  const dayStatus = classifyDayResult({
-    goals,
-    outcomes,
-    reflectionCount: input.reflection_answers.length,
-    focusMinutesTotal: day.focus_minutes_total,
-  });
-
-  if (dayStatus === "lost" && input.streak_freeze_used) {
+  if (streakBreaksUnlessFreeze(dayStatus) && input.streak_freeze_used) {
     const { data: u, error: uErr } = await userSb.from("users").select("streak_freeze_count").eq("id", userId).single();
     if (uErr) {
       return { data: null, error: { message: uErr.message, code: uErr.code, detail: uErr.details ?? undefined } };
@@ -121,26 +135,29 @@ export async function processCheckIn(
     }
   }
 
-  const perfect = isPerfectDay({
-    goals,
-    outcomes,
-    reflectionCount: input.reflection_answers.length,
-    focusMinutesTotal: day.focus_minutes_total,
-  });
+  const perfect = !isRestDay &&
+    isPerfectDay({
+      goals,
+      outcomes,
+      reflectionCount: input.reflection_answers.length,
+      focusMinutesTotal: day.focus_minutes_total,
+    });
 
-  const nnReviewed = goals.filter((g) => g.is_non_negotiable).every((g) => outcomes.has(g.id));
+  const nnReviewed = isRestDay ? false : goals.filter((g) => g.is_non_negotiable).every((g) => outcomes.has(g.id));
 
-  for (const o of input.goal_outcomes) {
-    const status = o.completed ? "completed" : "pending";
-    const completed_at = o.completed ? new Date().toISOString() : null;
-    const { error: upErr } = await userSb
-      .from("goals")
-      .update({ status, completed_at })
-      .eq("id", o.goal_id)
-      .eq("day_id", input.day_id)
-      .eq("user_id", userId);
-    if (upErr) {
-      return { data: null, error: { message: upErr.message, code: upErr.code, detail: upErr.details ?? undefined } };
+  if (!isRestDay) {
+    for (const o of input.goal_outcomes) {
+      const status = o.completed ? "completed" : "pending";
+      const completed_at = o.completed ? new Date().toISOString() : null;
+      const { error: upErr } = await userSb
+        .from("goals")
+        .update({ status, completed_at })
+        .eq("id", o.goal_id)
+        .eq("day_id", input.day_id)
+        .eq("user_id", userId);
+      if (upErr) {
+        return { data: null, error: { message: upErr.message, code: upErr.code, detail: upErr.details ?? undefined } };
+      }
     }
   }
 
@@ -182,7 +199,9 @@ export async function processCheckIn(
 
   const checkInId = (checkInRow as { id: string }).id;
 
-  if (dayStatus !== "skipped") {
+  const skipStreakUpdates = dayStatus === "skipped" || dayStatus === "rest";
+
+  if (!skipStreakUpdates) {
     const { data: streakRow, error: stFetchErr } = await serviceSb
       .from("streaks")
       .select("current_count,max_count,active,last_updated_date,perfect_day_count,perfect_days_this_month,start_date")
@@ -213,7 +232,7 @@ export async function processCheckIn(
 
     const userFreeze = userRow as { streak_freeze_count: number; streak_freeze_used_this_month: number };
 
-    if (dayStatus === "won") {
+    if (streakCountsForDay(dayStatus)) {
       if (streak.last_updated_date !== day.date) {
         const current_count = streak.current_count + 1;
         const max_count = Math.max(streak.max_count, current_count);
@@ -231,7 +250,7 @@ export async function processCheckIn(
           return { data: null, error: { message: stUp.message, code: stUp.code, detail: stUp.details ?? undefined } };
         }
       }
-    } else if (dayStatus === "lost") {
+    } else if (streakBreaksUnlessFreeze(dayStatus)) {
       if (input.streak_freeze_used) {
         const { error: fu } = await serviceSb
           .from("users")

@@ -1,4 +1,4 @@
-import type { DayResult, GoalOutcome, ProcessCheckinInput, ReflectionAnswer } from "./types.ts";
+import type { DayStatus, GoalOutcome, ProcessCheckinInput, ReflectionAnswer } from "./types.ts";
 
 export type GoalRow = { id: string; is_non_negotiable: boolean };
 
@@ -17,7 +17,7 @@ export function outcomeMap(outcomes: GoalOutcome[]): Map<string, boolean> {
   return m;
 }
 
-/** Every on-day goal must appear in outcomes when the day has goals. */
+/** Every on-day goal must appear in outcomes when the day has goals (skipped when `rest_day`). */
 export function validateGoalCoverage(goals: GoalRow[], outcomes: GoalOutcome[]): string | null {
   if (goals.length === 0) return null;
   const ids = new Set(outcomes.map((o) => o.goal_id));
@@ -29,7 +29,7 @@ export function validateGoalCoverage(goals: GoalRow[], outcomes: GoalOutcome[]):
   return null;
 }
 
-/** Non-negotiable goals must be explicitly completed to avoid a loss (except skipped path). */
+/** Non-negotiable goals must appear in outcomes when provided (skipped when `rest_day`). */
 export function validateNonNegotiables(goals: GoalRow[], outcomes: Map<string, boolean>): string | null {
   for (const g of goals) {
     if (!g.is_non_negotiable) continue;
@@ -40,30 +40,38 @@ export function validateNonNegotiables(goals: GoalRow[], outcomes: Map<string, b
   return null;
 }
 
+/**
+ * Day status for a submitted check-in (not used when `rest_day` — handler sets `rest` directly).
+ *
+ * - strong — all non-negotiables completed AND reflection_answers.length >= 1
+ * - solid — at least one non-negotiable completed OR any goal completed
+ * - light — submitted but no goal marked completed
+ * - skipped — no goals and no focus minutes (edge / legacy-compatible empty day)
+ */
 export function classifyDayResult(args: {
   goals: GoalRow[];
   outcomes: Map<string, boolean>;
   reflectionCount: number;
   focusMinutesTotal: number;
-}): DayResult {
+}): DayStatus {
   const { goals, outcomes, reflectionCount, focusMinutesTotal } = args;
 
   if (goals.length === 0 && focusMinutesTotal === 0) {
     return "skipped";
   }
 
-  for (const g of goals) {
-    if (!g.is_non_negotiable) continue;
-    const done = outcomes.get(g.id) === true;
-    if (!done) return "lost";
+  const nnGoals = goals.filter((g) => g.is_non_negotiable);
+  const allNnComplete = nnGoals.length === 0 || nnGoals.every((g) => outcomes.get(g.id) === true);
+  const anyNnCompleted = nnGoals.some((g) => outcomes.get(g.id) === true);
+  const anyGoalCompleted = goals.some((g) => outcomes.get(g.id) === true);
+
+  if (allNnComplete && reflectionCount >= 1) {
+    return "strong";
   }
-
-  const allNnComplete = goals.filter((g) => g.is_non_negotiable).every((g) => outcomes.get(g.id) === true);
-  const nn = goals.filter((g) => g.is_non_negotiable);
-  const nnOk = nn.length === 0 ? true : allNnComplete;
-
-  if (nnOk && reflectionCount >= 1) return "won";
-  return "lost";
+  if (anyNnCompleted || anyGoalCompleted) {
+    return "solid";
+  }
+  return "light";
 }
 
 export function isPerfectDay(args: {
@@ -83,6 +91,8 @@ export function parseProcessCheckinBody(raw: unknown): { ok: true; value: Proces
   const o = raw as Record<string, unknown>;
   const day_id = o.day_id;
   if (typeof day_id !== "string" || day_id.length === 0) return { ok: false, error: "day_id is required" };
+
+  const rest_day = o.rest_day === true;
 
   if (!Array.isArray(o.goal_outcomes)) return { ok: false, error: "goal_outcomes must be an array" };
   const goal_outcomes: GoalOutcome[] = [];
@@ -128,10 +138,15 @@ export function parseProcessCheckinBody(raw: unknown): { ok: true; value: Proces
     return { ok: false, error: "streak_freeze_used must be a boolean" };
   }
 
+  if (o.rest_day !== undefined && o.rest_day !== null && typeof o.rest_day !== "boolean") {
+    return { ok: false, error: "rest_day must be a boolean when provided" };
+  }
+
   return {
     ok: true,
     value: {
       day_id,
+      rest_day,
       goal_outcomes,
       reflection_answers,
       tomorrow_intention,

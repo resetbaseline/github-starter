@@ -24,9 +24,15 @@ Deno.test("classify skipped when no goals and no focus", () => {
   );
 });
 
-Deno.test("classify lost when non-negotiable incomplete", () => {
-  const goals = [{ id: "g1", is_non_negotiable: true }];
-  const outcomes = outcomeMap([{ goal_id: "g1", completed: false }]);
+Deno.test("classify solid when NN incomplete but negotiable completed", () => {
+  const goals = [
+    { id: "g1", is_non_negotiable: true },
+    { id: "g2", is_non_negotiable: false },
+  ];
+  const outcomes = outcomeMap([
+    { goal_id: "g1", completed: false },
+    { goal_id: "g2", completed: true },
+  ]);
   assertEquals(
     classifyDayResult({
       goals,
@@ -34,11 +40,11 @@ Deno.test("classify lost when non-negotiable incomplete", () => {
       reflectionCount: 2,
       focusMinutesTotal: 10,
     }),
-    "lost",
+    "solid",
   );
 });
 
-Deno.test("classify won when NN complete and reflections present", () => {
+Deno.test("classify strong when all NN complete and reflections present", () => {
   const goals = [{ id: "g1", is_non_negotiable: true }];
   const outcomes = outcomeMap([{ goal_id: "g1", completed: true }]);
   assertEquals(
@@ -48,7 +54,27 @@ Deno.test("classify won when NN complete and reflections present", () => {
       reflectionCount: 1,
       focusMinutesTotal: 5,
     }),
-    "won",
+    "strong",
+  );
+});
+
+Deno.test("classify light when nothing completed but day has goals", () => {
+  const goals = [
+    { id: "g1", is_non_negotiable: true },
+    { id: "g2", is_non_negotiable: false },
+  ];
+  const outcomes = outcomeMap([
+    { goal_id: "g1", completed: false },
+    { goal_id: "g2", completed: false },
+  ]);
+  assertEquals(
+    classifyDayResult({
+      goals,
+      outcomes,
+      reflectionCount: 0,
+      focusMinutesTotal: 5,
+    }),
+    "light",
   );
 });
 
@@ -85,8 +111,23 @@ Deno.test("parseProcessCheckinBody happy path", () => {
   });
   assertEquals(r.ok, true);
   if (r.ok) {
+    assertEquals(r.value.rest_day, false);
     assertEquals(r.value.tomorrow_timeblocks[0].start_time, "09:00:00");
   }
+});
+
+Deno.test("parseProcessCheckinBody rest_day true", () => {
+  const r = parseProcessCheckinBody({
+    day_id: "550e8400-e29b-41d4-a716-446655440000",
+    rest_day: true,
+    goal_outcomes: [],
+    reflection_answers: [],
+    tomorrow_intention: null,
+    tomorrow_timeblocks: [],
+    streak_freeze_used: false,
+  });
+  assertEquals(r.ok, true);
+  if (r.ok) assertEquals(r.value.rest_day, true);
 });
 
 Deno.test("parseProcessCheckinBody rejects bad boolean", () => {
@@ -97,6 +138,19 @@ Deno.test("parseProcessCheckinBody rejects bad boolean", () => {
     tomorrow_intention: null,
     tomorrow_timeblocks: [],
     streak_freeze_used: "no",
+  });
+  assertEquals(r.ok, false);
+});
+
+Deno.test("parseProcessCheckinBody rejects non-boolean rest_day", () => {
+  const r = parseProcessCheckinBody({
+    day_id: "550e8400-e29b-41d4-a716-446655440000",
+    rest_day: "yes",
+    goal_outcomes: [],
+    reflection_answers: [],
+    tomorrow_intention: null,
+    tomorrow_timeblocks: [],
+    streak_freeze_used: false,
   });
   assertEquals(r.ok, false);
 });

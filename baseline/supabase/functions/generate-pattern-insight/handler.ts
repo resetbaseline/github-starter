@@ -9,7 +9,7 @@ const PATTERN_USER_INSTRUCTION = `## Task
 You are writing a **weekly pattern insight** for this user (not a chat reply).
 
 Output **one** cohesive piece of prose: **4–8 short paragraphs** (plain text, no markdown headings, no bullet lists).
-Name concrete patterns you see in the numbers (days won/lost/skipped, goal completion, Gate triggers/dismissals, focus minutes, check-ins).
+Name concrete patterns you see in the numbers (day statuses like strong/solid/light/rest/skipped, goal completion, Gate triggers/dismissals, focus minutes, check-ins).
 Be direct but kind; avoid shame. End with **one** actionable experiment for next week (a single sentence).
 
 Do not invent dates or events that are not implied by the data. If the week has little data, say so briefly and still offer a gentle framing.`;

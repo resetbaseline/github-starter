@@ -1,8 +1,21 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callHaiku } from "../_shared/anthropic-client.ts";
-import { COACH_VOICE_SYSTEM_PROMPT } from "../_shared/coach-voice.ts";
 import { gateCalloutWarranted, tomorrowAdjustmentWarranted } from "./logic.ts";
 import type { GenerateCheckinNoteError, GenerateCheckinNoteInput, GenerateCheckinNoteSuccess } from "./types.ts";
+
+/** System prompt for nightly check-in notes only (no win/loss framing). */
+const CHECKIN_NOTE_SYSTEM_PROMPT = `You write the nightly check-in note for Baseline.
+
+Output shape:
+- Write 2–3 short sentences total (aim for 3 when the day status is "strong" as defined below).
+- Sentence 1: Name specifically what happened today using only the JSON data provided (goals completed vs pending, focus minutes, gate trigger count, gate dismissals, streak current_count when it helps). Do not invent facts.
+- Sentence 2: Give exactly one concrete next-step recommendation grounded in those patterns (a schedule tweak, Gate use, or goal sizing — not generic self-help).
+
+If the day row's "status" field is exactly the string "strong", add a third sentence (or a second clause after sentence 2): a calm identity-reinforcement line such as "This is what your baseline looks like." followed by one question asking what made today work.
+
+Hard bans for your wording (do not use these or close variants): won, lost, failed, crushed, great job, proud, amazing.
+
+Tone: calm, direct, observant — like a coach who read their log, not a cheerleader.`;
 
 function buildUserPrompt(args: {
   day: Record<string, unknown>;
@@ -12,35 +25,38 @@ function buildUserPrompt(args: {
   gateDismissals: number;
   triggersDetail: Array<{ usage_ratio: number | null; reason_classification: string | null }>;
   gateCallout: boolean;
-  acknowledgeDismissals: boolean;
   suggestTomorrowBlock: boolean;
+  dayStatus: string;
 }): string {
   const lines: string[] = [
-    "Write the nightly coach check-in note for this user (max 3 sentences). Be concrete; use the numbers below.",
+    "## Evidence (use only this; do not fabricate)",
     "",
-    "## Day row (JSON)",
+    "### Day row (JSON)",
     JSON.stringify(args.day, null, 2),
     "",
-    "## Goals for this day (JSON array; include status and completed_at)",
+    "### Goals for this day (JSON)",
     JSON.stringify(args.goals, null, 2),
     "",
-    `## Aggregates\n- streak current_count: ${args.streakCurrent}\n- gate_triggers (count on day row): ${args.gateTriggersOnDay}\n- gate_dismissals: ${args.gateDismissals}`,
+    "### Aggregates",
+    `- streak current_count: ${args.streakCurrent}`,
+    `- gate_triggers (count on day row): ${args.gateTriggersOnDay}`,
+    `- gate_dismissals: ${args.gateDismissals}`,
+    `- day status (string): ${args.dayStatus}`,
     "",
-    "## Instructions",
-    "- Tie sentences to this data; no generic filler.",
+    "### Gate trigger rows for this day (JSON)",
+    JSON.stringify(args.triggersDetail, null, 2),
+    "",
+    "## Writing constraints",
+    `- If gate_dismissals > 0, sentence 1 should mention dismissals factually (what they closed or declined), without framing it as victory or failure language.`,
+    args.gateCallout
+      ? "- Gate usage is elevated or patterns look sharp today: sentence 1 or 2 should mention triggers or usage vs stated reasons in one precise clause."
+      : "- Gate: keep any mention proportional; do not dramatize.",
+    args.suggestTomorrowBlock
+      ? "- Sentence 2 should lean toward a specific tomorrow adjustment (time block, first goal smaller, or Gate timing) because completion was thin or the day was light."
+      : "- Sentence 2 can still be one concrete habit-level step; keep it tied to the numbers above.",
+    "",
+    `If status is "strong", include the identity line + question as specified in the system prompt. Otherwise do not use that identity line or that extra question.`,
   ];
-
-  if (args.gateCallout) {
-    lines.push("- Include **one** sharp observation about Gate usage / triggers (not moralizing).");
-  }
-  if (args.acknowledgeDismissals) {
-    lines.push("- Because gate_dismissals > 0, briefly acknowledge what they turned down or closed out (a win).");
-  }
-  if (args.suggestTomorrowBlock) {
-    lines.push("- Include **one** specific suggestion for tomorrow (e.g. a time block, shorter first goal, or Gate tweak) grounded in today's pattern.");
-  }
-
-  lines.push("", "## Trigger detail (resolved rows for this day)", JSON.stringify(args.triggersDetail, null, 2));
 
   return lines.join("\n");
 }
@@ -97,7 +113,6 @@ export async function generateCoachCheckinNote(
     gateTriggersCountOnDay,
     triggersToday: triggerRows,
   });
-  const acknowledgeDismissals = gateDismissals > 0;
   const suggestTomorrowBlock = tomorrowAdjustmentWarranted({ dayStatus, goalsCount, goalsCompleted });
 
   const userPrompt = buildUserPrompt({
@@ -108,13 +123,13 @@ export async function generateCoachCheckinNote(
     gateDismissals,
     triggersDetail,
     gateCallout,
-    acknowledgeDismissals,
     suggestTomorrowBlock,
+    dayStatus,
   });
 
   let note: string;
   try {
-    const r = await callHaiku(COACH_VOICE_SYSTEM_PROMPT, [{ role: "user", content: userPrompt }], 512);
+    const r = await callHaiku(CHECKIN_NOTE_SYSTEM_PROMPT, [{ role: "user", content: userPrompt }], 512);
     note = r.content.trim();
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
