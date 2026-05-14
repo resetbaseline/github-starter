@@ -17,6 +17,8 @@ const swiftFiles = [
   "Baseline/Auth/LoginView.swift",
   "Baseline/Auth/SignUpView.swift",
   "Baseline/Onboarding/OnboardingFlow.swift",
+  "Baseline/Onboarding/OnboardingViewModel.swift",
+  "Baseline/Onboarding/OnboardingContentPage.swift",
   "Baseline/Onboarding/OnboardingScreen1.swift",
   "Baseline/Onboarding/OnboardingScreen2.swift",
   "Baseline/Onboarding/OnboardingScreen3.swift",
@@ -172,6 +174,8 @@ line(
 line(
   grp(g.onb, "Onboarding", "Onboarding", [
     `${fileRef["Baseline/Onboarding/OnboardingFlow.swift"]} /* OnboardingFlow.swift */`,
+    `${fileRef["Baseline/Onboarding/OnboardingViewModel.swift"]} /* OnboardingViewModel.swift */`,
+    `${fileRef["Baseline/Onboarding/OnboardingContentPage.swift"]} /* OnboardingContentPage.swift */`,
     `${fileRef["Baseline/Onboarding/OnboardingScreen1.swift"]} /* OnboardingScreen1.swift */`,
     `${fileRef["Baseline/Onboarding/OnboardingScreen2.swift"]} /* OnboardingScreen2.swift */`,
     `${fileRef["Baseline/Onboarding/OnboardingScreen3.swift"]} /* OnboardingScreen3.swift */`,
