@@ -7,6 +7,7 @@ struct CheckInFlow: View {
         NavigationStack {
             GoalReviewView()
                 .environmentObject(viewModel)
+                .navigationTitle("Check-in")
         }
     }
 }

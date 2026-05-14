@@ -48,6 +48,12 @@ enum Theme {
         static let topBorderColor = Colors.border
         /// 0.5pt top border
         static let topBorderWidth: CGFloat = 0.5
+
+        // UIKit appearance (sRGB matches `Colors` hex values).
+        static let backgroundUIColor = UIColor(red: 13 / 255, green: 13 / 255, blue: 13 / 255, alpha: 1)
+        static let accentUIColor = UIColor(red: 124 / 255, green: 92 / 255, blue: 191 / 255, alpha: 1)
+        static let unselectedItemUIColor = UIColor(red: 136 / 255, green: 136 / 255, blue: 136 / 255, alpha: 1)
+        static let primaryLabelUIColor = UIColor.white
     }
 
     // MARK: Typography (SF Pro Display; headings light/thin, body regular)

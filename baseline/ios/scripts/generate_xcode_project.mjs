@@ -10,6 +10,8 @@ const nid = () => crypto.randomBytes(12).toString("hex").toUpperCase();
 const swiftFiles = [
   "Baseline/App/BaselineApp.swift",
   "Baseline/App/RootView.swift",
+  "Baseline/App/MainTabView.swift",
+  "Baseline/App/AppAppearance.swift",
   "Baseline/Theme/Theme.swift",
   "Baseline/Auth/AuthManager.swift",
   "Baseline/Auth/LoginView.swift",
@@ -155,6 +157,8 @@ line(
   grp(g.app, "App", "App", [
     `${fileRef["Baseline/App/BaselineApp.swift"]} /* BaselineApp.swift */`,
     `${fileRef["Baseline/App/RootView.swift"]} /* RootView.swift */`,
+    `${fileRef["Baseline/App/MainTabView.swift"]} /* MainTabView.swift */`,
+    `${fileRef["Baseline/App/AppAppearance.swift"]} /* AppAppearance.swift */`,
   ]),
 );
 line(grp(g.theme, "Theme", "Theme", [`${fileRef["Baseline/Theme/Theme.swift"]} /* Theme.swift */`]));

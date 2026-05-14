@@ -16,7 +16,7 @@ struct RootView: View {
             case .onboarding:
                 OnboardingFlow()
             case .authenticated:
-                HomeView()
+                MainTabView()
             }
         }
         .animation(Theme.Animation.screenTransition, value: auth.state)

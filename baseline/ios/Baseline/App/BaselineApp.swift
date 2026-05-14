@@ -4,6 +4,10 @@ import SwiftUI
 struct BaselineApp: App {
     @StateObject private var authManager = AuthManager()
 
+    init() {
+        AppAppearance.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
             RootView()
