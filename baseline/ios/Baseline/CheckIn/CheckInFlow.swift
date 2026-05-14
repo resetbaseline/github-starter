@@ -5,9 +5,34 @@ struct CheckInFlow: View {
 
     var body: some View {
         NavigationStack {
-            GoalReviewView()
-                .environmentObject(viewModel)
-                .navigationTitle("Check-in")
+            Group {
+                switch viewModel.step {
+                case .goalReview:
+                    GoalReviewView()
+                case .reflection:
+                    ReflectionView()
+                case .dayResult:
+                    DayResultView()
+                }
+            }
+            .environmentObject(viewModel)
+            .animation(Theme.Animation.screenTransition, value: viewModel.step)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Theme.Colors.background)
+            .navigationTitle("Check-in")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbarBackground(Theme.Colors.background, for: .navigationBar)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    if viewModel.canGoBack {
+                        Button("Back") {
+                            viewModel.goBack()
+                        }
+                        .font(Theme.Typography.headline())
+                        .foregroundStyle(Theme.Colors.textSecondary)
+                    }
+                }
+            }
         }
     }
 }
