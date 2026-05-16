@@ -26,7 +26,7 @@ const swiftFiles = [
   "Baseline/Onboarding/OnboardingSetupView.swift",
   "Baseline/Home/HomeView.swift",
   "Baseline/Home/StreakCardView.swift",
-  "Baseline/Home/GoalsListView.swift",
+  "Baseline/Home/MountainProgressView.swift",
   "Baseline/Home/HomeViewModel.swift",
   "Baseline/CheckIn/CheckInFlow.swift",
   "Baseline/CheckIn/GoalReviewView.swift",
@@ -187,7 +187,7 @@ line(
   grp(g.home, "Home", "Home", [
     `${fileRef["Baseline/Home/HomeView.swift"]} /* HomeView.swift */`,
     `${fileRef["Baseline/Home/StreakCardView.swift"]} /* StreakCardView.swift */`,
-    `${fileRef["Baseline/Home/GoalsListView.swift"]} /* GoalsListView.swift */`,
+    `${fileRef["Baseline/Home/MountainProgressView.swift"]} /* MountainProgressView.swift */`,
     `${fileRef["Baseline/Home/HomeViewModel.swift"]} /* HomeViewModel.swift */`,
   ]),
 );

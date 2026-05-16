@@ -6,6 +6,8 @@ import SwiftUI
 struct HomeGoalItem: Identifiable, Equatable {
     let id: UUID
     let title: String
+    let category: String
+    let timeLabel: String
     let isNonNegotiable: Bool
     let isCompleted: Bool
 }
@@ -38,6 +40,22 @@ final class HomeViewModel: ObservableObject {
         f.locale = Locale.autoupdatingCurrent
         return f
     }()
+
+    var nonNegotiableGoals: [HomeGoalItem] {
+        goals.filter(\.isNonNegotiable)
+    }
+
+    var otherGoals: [HomeGoalItem] {
+        goals.filter { !$0.isNonNegotiable }
+    }
+
+    var progressFraction: Double {
+        Double(goalsCompleted) / Double(max(goalsTotal, 1))
+    }
+
+    var progressPercentString: String {
+        "\(Int(progressFraction * 100))%"
+    }
 
     var formattedToday: String {
         Self.dayFormatter.string(from: Date())
@@ -75,30 +93,40 @@ final class HomeViewModel: ObservableObject {
             HomeGoalItem(
                 id: Self.stableGoalIds[0],
                 title: "Morning movement",
+                category: "Wellness",
+                timeLabel: "7:30 AM",
                 isNonNegotiable: true,
                 isCompleted: true,
             ),
             HomeGoalItem(
                 id: Self.stableGoalIds[1],
                 title: "Deep work — project brief",
+                category: "Deep work",
+                timeLabel: "10:00 AM",
                 isNonNegotiable: true,
                 isCompleted: false,
             ),
             HomeGoalItem(
                 id: Self.stableGoalIds[2],
                 title: "Reply to two priority emails",
+                category: "Communication",
+                timeLabel: "11:30 AM",
                 isNonNegotiable: false,
                 isCompleted: true,
             ),
             HomeGoalItem(
                 id: Self.stableGoalIds[3],
                 title: "Walk at lunch",
+                category: "Movement",
+                timeLabel: "12:30 PM",
                 isNonNegotiable: false,
                 isCompleted: false,
             ),
             HomeGoalItem(
                 id: Self.stableGoalIds[4],
                 title: "Plan tomorrow in Baseline",
+                category: "Planning",
+                timeLabel: "8:45 PM",
                 isNonNegotiable: false,
                 isCompleted: false,
             ),

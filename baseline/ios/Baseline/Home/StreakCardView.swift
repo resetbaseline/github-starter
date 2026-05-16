@@ -1,47 +1,26 @@
 import SwiftUI
 
-struct StreakCardView: View {
-    @EnvironmentObject private var viewModel: HomeViewModel
+struct StreakPillView: View {
+    let count: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Theme.Spacing.sm) {
-            HStack {
-                Text("Streak")
-                    .font(Theme.Typography.caption1())
-                    .foregroundStyle(Theme.Colors.textSecondary)
-                Spacer(minLength: 0)
-                if viewModel.streakActive {
-                    Text("Active")
-                        .font(Theme.Typography.caption2())
-                        .foregroundStyle(Theme.Colors.accent)
-                        .padding(.horizontal, Theme.Spacing.xs)
-                        .padding(.vertical, 4)
-                        .background(Theme.Colors.accent.opacity(0.18))
-                        .clipShape(Capsule())
-                }
-            }
-
-            HStack(alignment: .firstTextBaseline, spacing: Theme.Spacing.sm) {
-                StreakBadgeView(count: viewModel.streakCurrent)
-                Text("best \(viewModel.streakMax)")
-                    .font(Theme.Typography.subheadline())
-                    .foregroundStyle(Theme.Colors.textMuted)
-            }
-
-            Text("Today counts when you finish your check-in—keep the chain honest, not perfect.")
-                .font(Theme.Typography.footnote())
-                .foregroundStyle(Theme.Colors.textSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+        HStack(spacing: 4) {
+            Text("🔥")
+            Text("\(count)")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.Colors.accent)
+            Text("day streak")
+                .font(.system(size: 10))
+                .foregroundStyle(Theme.Colors.accent)
         }
-        .padding(Theme.Spacing.sm)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Theme.Colors.surface)
-        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
+        .padding(.vertical, 5)
+        .padding(.horizontal, 10)
+        .background(Color(hex: "#1A1228"))
+        .clipShape(Capsule())
         .overlay(
-            RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
-                .stroke(Theme.Colors.border, lineWidth: 1)
+            Capsule()
+                .stroke(Color(hex: "#2D1F4A"), lineWidth: 0.5),
         )
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Streak \(viewModel.streakCurrent) days, best \(viewModel.streakMax)")
+        .accessibilityLabel("\(count) day streak")
     }
 }

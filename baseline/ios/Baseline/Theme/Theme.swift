@@ -176,4 +176,15 @@ extension Color {
             blue: Double(rgb & 0xFF) / 255
         )
     }
+
+    /// Hex string `#RRGGBB` or `RRGGBB` (6 hex digits).
+    init(hex: String) {
+        var s = hex.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        if s.hasPrefix("#") { s.removeFirst() }
+        guard s.count == 6, let v = UInt32(s, radix: 16) else {
+            self = .clear
+            return
+        }
+        self.init(rgb: v)
+    }
 }
