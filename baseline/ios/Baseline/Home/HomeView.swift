@@ -205,6 +205,7 @@ private struct MountainProgressCard: View {
                     .foregroundStyle(Theme.Colors.accent)
             }
             MountainProgressView(completed: viewModel.goalsCompleted, total: viewModel.goalsTotal)
+                .frame(height: 70)
         }
         .padding(12)
         .background(Color(hex: "#0A0612"))

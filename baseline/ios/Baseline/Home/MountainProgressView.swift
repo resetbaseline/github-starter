@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Canvas mountain illustration driven by `completed` (stage = min(completed, 5)).
+/// SwiftUI `Canvas` mountain driven by `completed` (`stage = min(completed, 5)`).
 struct MountainProgressView: View {
     let completed: Int
     let total: Int
@@ -12,10 +12,9 @@ struct MountainProgressView: View {
     var body: some View {
         Canvas { context, size in
             drawSky(context: context, size: size)
+            drawNebula(context: context, size: size)
             drawStars(context: context, size: size)
-            if stage == 5 {
-                drawPeakRadialGlow(context: context, size: size)
-            }
+
             switch stage {
             case 0:
                 drawStage0(context: context, size: size)
@@ -24,79 +23,83 @@ struct MountainProgressView: View {
             case 2:
                 drawStage2(context: context, size: size)
             case 3:
-                drawStage3(context: context, size: size)
+                drawMatterhornStages(context: context, size: size, matterhornStage: 3)
             case 4:
-                drawStage4(context: context, size: size)
+                drawMatterhornStages(context: context, size: size, matterhornStage: 4)
             default:
-                drawStage5(context: context, size: size)
+                drawMatterhornStages(context: context, size: size, matterhornStage: 5)
             }
         }
-        .frame(height: 100)
+        .frame(height: 70)
         .frame(maxWidth: .infinity)
         .accessibilityLabel("Mountain progress \(completed) of \(total) goals completed, stage \(stage) of five")
     }
 
-    // MARK: - Shared sky + stars
+    // MARK: - Shared sky, nebula, stars
 
     private func drawSky(context: GraphicsContext, size: CGSize) {
         let rect = CGRect(origin: .zero, size: size)
         context.fill(
             Path(rect),
             with: .linearGradient(
-                Gradient(colors: [Color(hex: "#0A0612"), Color(hex: "#0D0918")]),
-                startPoint: CGPoint(x: 0, y: 0),
+                Gradient(stops: [
+                    .init(color: Color(hex: "#04020C"), location: 0),
+                    .init(color: Color(hex: "#080514"), location: 0.4),
+                    .init(color: Color(hex: "#120830"), location: 1),
+                ]),
+                startPoint: .zero,
                 endPoint: CGPoint(x: 0, y: size.height),
             ),
         )
     }
 
-    private func drawStars(context: GraphicsContext, size: CGSize) {
-        let stars: [(CGFloat, CGFloat, Double)] = [
-            (0.08, 0.08, 0.35), (0.22, 0.18, 0.22), (0.38, 0.06, 0.40),
-            (0.52, 0.14, 0.28), (0.68, 0.10, 0.34), (0.84, 0.07, 0.24),
-            (0.15, 0.28, 0.32), (0.45, 0.24, 0.20), (0.72, 0.22, 0.38),
-            (0.92, 0.20, 0.26),
-        ]
-        for (nx, ny, o) in stars {
-            let p = CGPoint(x: nx * size.width, y: ny * size.height)
-            var star = Path()
-            star.addEllipse(in: CGRect(x: p.x - 0.8, y: p.y - 0.8, width: 1.6, height: 1.6))
-            context.fill(star, with: .color(.white.opacity(o)))
-        }
-    }
-
-    private func mountainFillShading(topY: CGFloat, bottomY: CGFloat, midX: CGFloat) -> GraphicsContext.Shading {
-        .linearGradient(
-            Gradient(stops: [
-                .init(color: Color(hex: "#A882D8"), location: 0),
-                .init(color: Color(hex: "#7C5CBF"), location: 0.2),
-                .init(color: Color(hex: "#4A2878"), location: 0.5),
-                .init(color: Color(hex: "#2A1548"), location: 0.8),
-                .init(color: Color(hex: "#150A28"), location: 1),
-            ]),
-            startPoint: CGPoint(x: midX, y: topY),
-            endPoint: CGPoint(x: midX, y: bottomY),
-        )
-    }
-
-    private func drawPeakRadialGlow(context: GraphicsContext, size: CGSize) {
+    private func drawNebula(context: GraphicsContext, size: CGSize) {
         let cx = size.width * 0.5
-        let peakY = size.height * 0.04
-        let r = CGRect(x: cx - 50, y: peakY - 10, width: 100, height: 90)
-        var glow = Path()
-        glow.addEllipse(in: r)
+        let cy = size.height * 0.1
+        let r = size.width * 0.5
+        var oval = Path()
+        oval.addEllipse(in: CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2))
         context.fill(
-            glow,
+            oval,
             with: .radialGradient(
-                Gradient(colors: [
-                    Color(red: 124 / 255, green: 92 / 255, blue: 191 / 255).opacity(0.25),
-                    Color(red: 124 / 255, green: 92 / 255, blue: 191 / 255).opacity(0),
+                Gradient(stops: [
+                    .init(color: Color(red: 80 / 255, green: 40 / 255, blue: 140 / 255, opacity: 0.12), location: 0),
+                    .init(color: Color(red: 60 / 255, green: 20 / 255, blue: 100 / 255, opacity: 0.06), location: 0.45),
+                    .init(color: Color.clear, location: 1),
                 ]),
-                center: CGPoint(x: cx, y: peakY),
+                center: CGPoint(x: cx, y: cy),
                 startRadius: 0,
-                endRadius: 40,
+                endRadius: r,
             ),
         )
+    }
+
+    private func drawStars(context: GraphicsContext, size: CGSize) {
+        let stars: [(CGFloat, CGFloat, Double, CGFloat)] = [
+            (0.06, 0.06, 0.5, 1.0), (0.15, 0.18, 0.35, 0.7), (0.28, 0.05, 0.55, 1.0),
+            (0.42, 0.14, 0.4, 0.8), (0.58, 0.04, 0.5, 1.0), (0.7, 0.16, 0.3, 0.7),
+            (0.82, 0.07, 0.48, 1.0), (0.91, 0.2, 0.38, 0.8), (0.22, 0.28, 0.28, 0.6),
+            (0.75, 0.24, 0.35, 0.7), (0.5, 0.22, 0.25, 0.6),
+        ]
+        for (nx, ny, opacity, radius) in stars {
+            let p = CGPoint(x: nx * size.width, y: ny * size.height)
+            var star = Path()
+            star.addEllipse(in: CGRect(x: p.x - radius, y: p.y - radius, width: radius * 2, height: radius * 2))
+            context.fill(star, with: .color(.white.opacity(opacity)))
+            if opacity > 0.45 {
+                let crossOpacity = opacity * 0.4
+                let arm: CGFloat = 2
+                var hLine = Path()
+                hLine.move(to: CGPoint(x: p.x - arm, y: p.y))
+                hLine.addLine(to: CGPoint(x: p.x + arm, y: p.y))
+                var vLine = Path()
+                vLine.move(to: CGPoint(x: p.x, y: p.y - arm))
+                vLine.addLine(to: CGPoint(x: p.x, y: p.y + arm))
+                let c = Color.white.opacity(crossOpacity)
+                context.stroke(hLine, with: .color(c), style: StrokeStyle(lineWidth: 0.5, lineCap: .round))
+                context.stroke(vLine, with: .color(c), style: StrokeStyle(lineWidth: 0.5, lineCap: .round))
+            }
+        }
     }
 
     // MARK: - Stage 0
@@ -104,20 +107,35 @@ struct MountainProgressView: View {
     private func drawStage0(context: GraphicsContext, size: CGSize) {
         let w = size.width
         let h = size.height
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: h))
-        path.addLine(to: CGPoint(x: 0, y: h - 6))
-        path.addQuadCurve(to: CGPoint(x: w * 0.35, y: h - 14), control: CGPoint(x: w * 0.12, y: h - 22))
-        path.addQuadCurve(to: CGPoint(x: w * 0.65, y: h - 12), control: CGPoint(x: w * 0.5, y: h - 20))
-        path.addQuadCurve(to: CGPoint(x: w, y: h - 6), control: CGPoint(x: w * 0.88, y: h - 18))
-        path.addLine(to: CGPoint(x: w, y: h))
-        path.closeSubpath()
+        let y0 = h * 0.55
+        var base = Path()
+        base.move(to: CGPoint(x: 0, y: h))
+        base.addLine(to: CGPoint(x: 0, y: y0 + 8))
+        base.addQuadCurve(
+            to: CGPoint(x: w, y: y0 + 6),
+            control: CGPoint(x: w * 0.5, y: y0 - 6),
+        )
+        base.addLine(to: CGPoint(x: w, y: h))
+        base.closeSubpath()
         context.fill(
-            path,
+            base,
             with: .linearGradient(
-                Gradient(colors: [Color(hex: "#2A1548"), Color(hex: "#110828")]),
-                startPoint: CGPoint(x: w * 0.5, y: h - 28),
+                Gradient(colors: [Color(hex: "#180B30"), Color(hex: "#0A0520")]),
+                startPoint: CGPoint(x: w * 0.5, y: y0 - 10),
                 endPoint: CGPoint(x: w * 0.5, y: h),
+            ),
+        )
+        let bandY = h * 0.68
+        let band = CGRect(x: 0, y: bandY - 4, width: w, height: 8)
+        context.fill(
+            Path(band),
+            with: .linearGradient(
+                Gradient(colors: [
+                    Color(red: 100 / 255, green: 60 / 255, blue: 180 / 255, opacity: 0.3),
+                    Color.clear,
+                ]),
+                startPoint: CGPoint(x: w * 0.5, y: bandY - 4),
+                endPoint: CGPoint(x: w * 0.5, y: bandY + 4),
             ),
         )
     }
@@ -127,19 +145,37 @@ struct MountainProgressView: View {
     private func drawStage1(context: GraphicsContext, size: CGSize) {
         let w = size.width
         let h = size.height
-        let cx = w * 0.5
-        let peakY = h * (1 - 0.42)
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: h))
-        path.addLine(to: CGPoint(x: 0, y: h - 4))
-        path.addCurve(
-            to: CGPoint(x: w, y: h - 4),
-            control1: CGPoint(x: w * 0.25, y: peakY),
-            control2: CGPoint(x: w * 0.75, y: peakY),
+        let peakY = h * 0.2
+        var hill = Path()
+        hill.move(to: CGPoint(x: 0, y: h))
+        hill.addLine(to: CGPoint(x: 0, y: h * 0.78))
+        hill.addCurve(
+            to: CGPoint(x: w, y: h * 0.78),
+            control1: CGPoint(x: w * 0.28, y: peakY),
+            control2: CGPoint(x: w * 0.72, y: peakY),
         )
-        path.addLine(to: CGPoint(x: w, y: h))
-        path.closeSubpath()
-        context.fill(path, with: mountainFillShading(topY: peakY, bottomY: h, midX: cx))
+        hill.addLine(to: CGPoint(x: w, y: h))
+        hill.closeSubpath()
+        context.fill(
+            hill,
+            with: .linearGradient(
+                Gradient(colors: [Color(hex: "#160830"), Color(hex: "#0A0520")]),
+                startPoint: CGPoint(x: w * 0.5, y: peakY),
+                endPoint: CGPoint(x: w * 0.5, y: h),
+            ),
+        )
+        var rim = Path()
+        rim.move(to: CGPoint(x: 0, y: h * 0.78))
+        rim.addCurve(
+            to: CGPoint(x: w, y: h * 0.78),
+            control1: CGPoint(x: w * 0.28, y: peakY),
+            control2: CGPoint(x: w * 0.72, y: peakY),
+        )
+        context.stroke(
+            rim,
+            with: .color(Color(red: 120 / 255, green: 80 / 255, blue: 200 / 255, opacity: 0.25)),
+            style: StrokeStyle(lineWidth: 1, lineCap: .round),
+        )
     }
 
     // MARK: - Stage 2
@@ -148,187 +184,389 @@ struct MountainProgressView: View {
         let w = size.width
         let h = size.height
         let cx = w * 0.5
-        let midPeakY = h * (1 - 0.62)
-        let sidePeakY = h * (1 - 0.38)
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: h))
-        path.addLine(to: CGPoint(x: 0, y: sidePeakY + 18))
-        path.addQuadCurve(
-            to: CGPoint(x: w * 0.28, y: sidePeakY),
-            control: CGPoint(x: w * 0.12, y: sidePeakY + 8),
+        let bgPeakY = h * 0.34
+        var back = Path()
+        back.move(to: CGPoint(x: 0, y: h))
+        back.addLine(to: CGPoint(x: 0, y: h * 0.72))
+        back.addCurve(
+            to: CGPoint(x: cx, y: bgPeakY + 14),
+            control1: CGPoint(x: w * 0.22, y: h * 0.58),
+            control2: CGPoint(x: w * 0.38, y: bgPeakY + 20),
         )
-        path.addQuadCurve(
-            to: CGPoint(x: cx, y: midPeakY),
-            control: CGPoint(x: w * 0.38, y: midPeakY + 22),
+        back.addCurve(
+            to: CGPoint(x: w, y: h * 0.72),
+            control1: CGPoint(x: w * 0.62, y: bgPeakY + 20),
+            control2: CGPoint(x: w * 0.78, y: h * 0.58),
         )
-        path.addQuadCurve(
-            to: CGPoint(x: w * 0.72, y: sidePeakY),
-            control: CGPoint(x: w * 0.62, y: midPeakY + 22),
-        )
-        path.addQuadCurve(
-            to: CGPoint(x: w, y: sidePeakY + 18),
-            control: CGPoint(x: w * 0.88, y: sidePeakY + 8),
-        )
-        path.addLine(to: CGPoint(x: w, y: h))
-        path.closeSubpath()
-        context.fill(path, with: mountainFillShading(topY: midPeakY, bottomY: h, midX: cx))
-    }
-
-    // MARK: - Back ridge (stages 3–5)
-
-    private func backRidgePath(size: CGSize) -> Path {
-        let w = size.width
-        let h = size.height
-        var path = Path()
-        path.move(to: CGPoint(x: 0, y: h))
-        path.addLine(to: CGPoint(x: 0, y: h * 0.72))
-        path.addCurve(
-            to: CGPoint(x: w * 0.45, y: h * 0.58),
-            control1: CGPoint(x: w * 0.15, y: h * 0.62),
-            control2: CGPoint(x: w * 0.28, y: h * 0.52),
-        )
-        path.addCurve(
-            to: CGPoint(x: w, y: h * 0.74),
-            control1: CGPoint(x: w * 0.62, y: h * 0.52),
-            control2: CGPoint(x: w * 0.82, y: h * 0.66),
-        )
-        path.addLine(to: CGPoint(x: w, y: h))
-        path.closeSubpath()
-        return path
-    }
-
-    private func drawBackRidge(context: GraphicsContext, size: CGSize) {
-        let p = backRidgePath(size: size)
+        back.addLine(to: CGPoint(x: w, y: h))
+        back.closeSubpath()
         context.fill(
-            p,
+            back,
             with: .linearGradient(
-                Gradient(colors: [Color(hex: "#1E0F40"), Color(hex: "#0D0820")]),
-                startPoint: CGPoint(x: size.width * 0.5, y: size.height * 0.45),
-                endPoint: CGPoint(x: size.width * 0.5, y: size.height),
+                Gradient(colors: [Color(hex: "#1A0A35"), Color(hex: "#0D0622")]),
+                startPoint: CGPoint(x: cx, y: bgPeakY),
+                endPoint: CGPoint(x: cx, y: h),
+            ),
+        )
+        let fgPeakY = h * 0.26
+        var front = Path()
+        front.move(to: CGPoint(x: 0, y: h))
+        front.addLine(to: CGPoint(x: 0, y: h * 0.76))
+        front.addCurve(
+            to: CGPoint(x: cx, y: fgPeakY + 10),
+            control1: CGPoint(x: w * 0.24, y: h * 0.52),
+            control2: CGPoint(x: w * 0.4, y: fgPeakY + 16),
+        )
+        front.addCurve(
+            to: CGPoint(x: w, y: h * 0.76),
+            control1: CGPoint(x: w * 0.6, y: fgPeakY + 16),
+            control2: CGPoint(x: w * 0.76, y: h * 0.52),
+        )
+        front.addLine(to: CGPoint(x: w, y: h))
+        front.closeSubpath()
+        context.fill(
+            front,
+            with: .linearGradient(
+                Gradient(stops: [
+                    .init(color: Color(hex: "#8B6ACC"), location: 0),
+                    .init(color: Color(hex: "#5A3A90"), location: 0.5),
+                    .init(color: Color(hex: "#1A0A35"), location: 1),
+                ]),
+                startPoint: CGPoint(x: cx, y: fgPeakY),
+                endPoint: CGPoint(x: cx, y: h),
             ),
         )
     }
 
-    // MARK: - Matterhorn main shapes
+    // MARK: - Stages 3–5 Matterhorn
 
-    private func matterhornPath(size: CGSize, peakFactor: CGFloat) -> (path: Path, peak: CGPoint) {
+    private func drawMatterhornStages(context: GraphicsContext, size: CGSize, matterhornStage: Int) {
         let w = size.width
         let h = size.height
         let cx = w * 0.5
-        let tipY = h * (1 - peakFactor)
-        var path = Path()
-        path.move(to: CGPoint(x: cx, y: tipY))
-        path.addLine(to: CGPoint(x: cx - w * 0.06, y: tipY + h * 0.06))
-        path.addLine(to: CGPoint(x: cx - w * 0.22, y: h * 0.50))
-        path.addLine(to: CGPoint(x: cx - w * 0.38, y: h * 0.64))
-        path.addLine(to: CGPoint(x: 0, y: h))
-        path.addLine(to: CGPoint(x: w, y: h))
-        path.addLine(to: CGPoint(x: cx + w * 0.34, y: h * 0.64))
-        path.addLine(to: CGPoint(x: cx + w * 0.14, y: h * 0.50))
-        path.addLine(to: CGPoint(x: cx + w * 0.045, y: tipY + h * 0.055))
-        path.closeSubpath()
-        return (path, CGPoint(x: cx, y: tipY))
-    }
 
-    private func steppedMatterhornPath(size: CGSize, peakFactor: CGFloat) -> (path: Path, peak: CGPoint) {
-        let w = size.width
-        let h = size.height
-        let cx = w * 0.5
-        let tipY = h * (1 - peakFactor)
-        var path = Path()
-        path.move(to: CGPoint(x: cx, y: tipY))
-        path.addLine(to: CGPoint(x: cx - w * 0.04, y: tipY + h * 0.04))
-        path.addLine(to: CGPoint(x: cx - w * 0.10, y: h * 0.36))
-        path.addLine(to: CGPoint(x: cx - w * 0.20, y: h * 0.50))
-        path.addLine(to: CGPoint(x: cx - w * 0.30, y: h * 0.58))
-        path.addLine(to: CGPoint(x: cx - w * 0.42, y: h * 0.66))
-        path.addLine(to: CGPoint(x: 0, y: h))
-        path.addLine(to: CGPoint(x: w, y: h))
-        path.addLine(to: CGPoint(x: cx + w * 0.40, y: h * 0.66))
-        path.addLine(to: CGPoint(x: cx + w * 0.26, y: h * 0.58))
-        path.addLine(to: CGPoint(x: cx + w * 0.14, y: h * 0.50))
-        path.addLine(to: CGPoint(x: cx + w * 0.06, y: h * 0.36))
-        path.addLine(to: CGPoint(x: cx + w * 0.025, y: tipY + h * 0.038))
-        path.closeSubpath()
-        return (path, CGPoint(x: cx, y: tipY))
-    }
+        drawBackgroundRidge(context: context, w: w, h: h, topFactor: 0.82, fill: Color(hex: "#0E0520"))
+        drawBackgroundRidge(context: context, w: w, h: h, topFactor: 0.72, fill: Color(hex: "#130828"))
+        drawBackgroundRidge(context: context, w: w, h: h, topFactor: 0.62, fill: Color(hex: "#180B30"))
 
-    private func snowCapPath(peak: CGPoint, halfWidth: CGFloat) -> Path {
-        var path = Path()
-        path.move(to: peak)
-        path.addLine(to: CGPoint(x: peak.x - halfWidth, y: peak.y + 16))
-        path.addLine(to: CGPoint(x: peak.x + halfWidth * 0.85, y: peak.y + 16))
-        path.closeSubpath()
-        return path
-    }
-
-    private func drawRidgeHighlights(context: GraphicsContext, peak: CGPoint, size: CGSize, w: CGFloat) {
-        let h = size.height
-        var left = Path()
-        left.move(to: peak)
-        left.addLine(to: CGPoint(x: peak.x - w * 0.18, y: h * 0.52))
-        var right = Path()
-        right.move(to: peak)
-        right.addLine(to: CGPoint(x: peak.x + w * 0.14, y: h * 0.52))
-        let hi = Color(red: 180 / 255, green: 140 / 255, blue: 255 / 255).opacity(0.5)
-        context.stroke(left, with: .color(hi), style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
-        context.stroke(right, with: .color(hi), style: StrokeStyle(lineWidth: 1.2, lineCap: .round, lineJoin: .round))
-    }
-
-    private func drawSnowAndPeak(context: GraphicsContext, peak: CGPoint, capHalfWidth: CGFloat) {
-        let snow = snowCapPath(peak: peak, halfWidth: capHalfWidth)
+        let mistRect = CGRect(x: 0, y: h * 0.4, width: w, height: h * 0.6)
         context.fill(
-            snow,
+            Path(mistRect),
             with: .linearGradient(
-                Gradient(colors: [.white, .white.opacity(0)]),
-                startPoint: peak,
-                endPoint: CGPoint(x: peak.x, y: peak.y + 18),
+                Gradient(stops: [
+                    .init(color: Color(red: 60 / 255, green: 20 / 255, blue: 100 / 255, opacity: 0), location: 0),
+                    .init(color: Color(red: 40 / 255, green: 10 / 255, blue: 80 / 255, opacity: 0.15), location: 0.5),
+                    .init(color: Color(red: 20 / 255, green: 5 / 255, blue: 50 / 255, opacity: 0.4), location: 1),
+                ]),
+                startPoint: CGPoint(x: cx, y: h * 0.4),
+                endPoint: CGPoint(x: cx, y: h),
             ),
         )
+
+        let tipY: CGFloat = {
+            switch matterhornStage {
+            case 3: return h * 0.06
+            case 4: return h * 0.02
+            default: return h * (-0.01)
+            }
+        }()
+
+        if matterhornStage == 4 {
+            drawTipGlowLarge(
+                context: context,
+                center: CGPoint(x: cx, y: tipY),
+                inner: Color(red: 140 / 255, green: 100 / 255, blue: 210 / 255, opacity: 0.2),
+                mid: Color(red: 100 / 255, green: 60 / 255, blue: 180 / 255, opacity: 0.08),
+                radius: 45,
+            )
+        }
+        if matterhornStage == 5 {
+            drawTipGlowLarge(
+                context: context,
+                center: CGPoint(x: cx, y: tipY),
+                inner: Color(red: 140 / 255, green: 100 / 255, blue: 210 / 255, opacity: 0.28),
+                mid: Color(red: 100 / 255, green: 60 / 255, blue: 180 / 255, opacity: 0.14),
+                radius: 60,
+            )
+            drawAurora(context: context, w: w, h: h, cx: cx)
+        }
+
+        let leftPts = leftFacePoints(cx: cx, h: h, tipY: tipY, stage: matterhornStage)
+        let rightPts = rightFacePoints(cx: cx, w: w, h: h, tipY: tipY, stage: matterhornStage)
+
+        fillFace(
+            context: context,
+            points: leftPts,
+            start: CGPoint(x: cx - 60, y: tipY),
+            end: CGPoint(x: cx, y: h),
+            stops: [
+                (Color(hex: "#9B7FD4"), 0),
+                (Color(hex: "#6B45A8"), 0.15),
+                (Color(hex: "#3D2068"), 0.4),
+                (Color(hex: "#20103A"), 0.75),
+                (Color(hex: "#120828"), 1),
+            ],
+        )
+        fillFace(
+            context: context,
+            points: rightPts,
+            start: CGPoint(x: cx, y: tipY),
+            end: CGPoint(x: cx + 60, y: h),
+            stops: [
+                (Color(hex: "#B090E0"), 0),
+                (Color(hex: "#7C5CBF"), 0.15),
+                (Color(hex: "#4A2878"), 0.4),
+                (Color(hex: "#251248"), 0.75),
+                (Color(hex: "#150830"), 1),
+            ],
+        )
+
+        drawRightShadow(context: context, cx: cx, tipY: tipY, w: w, h: h)
+
+        let snowHalf: CGFloat = matterhornStage == 3 ? 11 : (matterhornStage == 4 ? 14 : 17)
+        drawSnowCap(context: context, cx: cx, tipY: tipY, h: h, halfWidth: snowHalf)
+
+        let tip = CGPoint(x: cx, y: tipY)
+        let leftFirst = leftPts[1]
+        let rightFirst = rightPts[1]
+        var hl = Path()
+        hl.move(to: tip)
+        hl.addLine(to: leftFirst)
+        var hr = Path()
+        hr.move(to: tip)
+        hr.addLine(to: rightFirst)
+        let ridgeHi = Color(red: 200 / 255, green: 165 / 255, blue: 255 / 255, opacity: 0.45)
+        context.stroke(hl, with: .color(ridgeHi), style: StrokeStyle(lineWidth: 1.1, lineCap: .round))
+        context.stroke(hr, with: .color(ridgeHi), style: StrokeStyle(lineWidth: 1.1, lineCap: .round))
+
+        var spine = Path()
+        spine.move(to: CGPoint(x: cx, y: tipY + 2))
+        spine.addLine(to: CGPoint(x: cx + 2, y: h * 0.35))
+        context.stroke(
+            spine,
+            with: .color(Color(red: 210 / 255, green: 180 / 255, blue: 255 / 255, opacity: 0.18)),
+            style: StrokeStyle(lineWidth: 1.5, lineCap: .round),
+        )
+
+        let glowCenter = CGPoint(x: cx, y: tipY - 1)
+        var tipGlow = Path()
+        tipGlow.addEllipse(in: CGRect(x: glowCenter.x - 6, y: glowCenter.y - 6, width: 12, height: 12))
+        context.fill(
+            tipGlow,
+            with: .radialGradient(
+                Gradient(stops: [
+                    .init(color: .white, location: 0),
+                    .init(color: Color(red: 230 / 255, green: 220 / 255, blue: 255 / 255, opacity: 0.8), location: 0.5),
+                    .init(color: .clear, location: 1),
+                ]),
+                center: glowCenter,
+                startRadius: 0,
+                endRadius: 5,
+            ),
+        )
+
         var dot = Path()
-        dot.addEllipse(in: CGRect(x: peak.x - 2.5, y: peak.y - 2.5, width: 5, height: 5))
+        dot.addEllipse(in: CGRect(x: cx - 2, y: tipY - 2, width: 4, height: 4))
         context.fill(dot, with: .color(.white))
     }
 
-    private func drawStage3(context: GraphicsContext, size: CGSize) {
-        drawBackRidge(context: context, size: size)
-        let (mp, peak) = matterhornPath(size: size, peakFactor: 0.82)
-        context.fill(mp, with: mountainFillShading(topY: peak.y, bottomY: size.height, midX: peak.x))
-        drawRidgeHighlights(context: context, peak: peak, size: size, w: size.width)
-        drawSnowAndPeak(context: context, peak: peak, capHalfWidth: 10)
+    private func drawBackgroundRidge(context: GraphicsContext, w: CGFloat, h: CGFloat, topFactor: CGFloat, fill: Color) {
+        let yEdge = h * topFactor
+        let dip: CGFloat = 10
+        var path = Path()
+        path.move(to: CGPoint(x: 0, y: h))
+        path.addLine(to: CGPoint(x: 0, y: yEdge))
+        path.addCurve(
+            to: CGPoint(x: w, y: yEdge),
+            control1: CGPoint(x: w * 0.35, y: yEdge + dip),
+            control2: CGPoint(x: w * 0.65, y: yEdge + dip),
+        )
+        path.addLine(to: CGPoint(x: w, y: h))
+        path.closeSubpath()
+        context.fill(path, with: .color(fill))
     }
 
-    private func drawStage4(context: GraphicsContext, size: CGSize) {
-        drawBackRidge(context: context, size: size)
-        let (mp, peak) = matterhornPath(size: size, peakFactor: 0.92)
-        context.fill(mp, with: mountainFillShading(topY: peak.y, bottomY: size.height, midX: peak.x))
-        drawRidgeHighlights(context: context, peak: peak, size: size, w: size.width)
-        var left2 = Path()
-        left2.move(to: CGPoint(x: peak.x - 4, y: peak.y + 8))
-        left2.addLine(to: CGPoint(x: peak.x - size.width * 0.22, y: size.height * 0.48))
-        var right2 = Path()
-        right2.move(to: CGPoint(x: peak.x + 3, y: peak.y + 8))
-        right2.addLine(to: CGPoint(x: peak.x + size.width * 0.18, y: size.height * 0.48))
-        let hi = Color(red: 180 / 255, green: 140 / 255, blue: 255 / 255).opacity(0.5)
-        context.stroke(left2, with: .color(hi), style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
-        context.stroke(right2, with: .color(hi), style: StrokeStyle(lineWidth: 1.4, lineCap: .round))
-        drawSnowAndPeak(context: context, peak: peak, capHalfWidth: 14)
+    private func leftFacePoints(cx: CGFloat, h: CGFloat, tipY: CGFloat, stage: Int) -> [CGPoint] {
+        switch stage {
+        case 3:
+            return [
+                CGPoint(x: cx, y: tipY),
+                CGPoint(x: cx - 7, y: tipY + h * 0.08),
+                CGPoint(x: cx - 20, y: h * 0.3),
+                CGPoint(x: cx - 40, y: h * 0.52),
+                CGPoint(x: cx - 72, y: h * 0.76),
+                CGPoint(x: 0, y: h),
+                CGPoint(x: cx, y: h),
+            ]
+        case 4:
+            return [
+                CGPoint(x: cx, y: tipY),
+                CGPoint(x: cx - 6, y: tipY + h * 0.06),
+                CGPoint(x: cx - 16, y: h * 0.24),
+                CGPoint(x: cx - 34, y: h * 0.44),
+                CGPoint(x: cx - 56, y: h * 0.62),
+                CGPoint(x: cx - 82, y: h * 0.8),
+                CGPoint(x: 0, y: h),
+                CGPoint(x: cx, y: h),
+            ]
+        default:
+            return [
+                CGPoint(x: cx, y: tipY),
+                CGPoint(x: cx - 5, y: tipY + h * 0.05),
+                CGPoint(x: cx - 13, y: h * 0.2),
+                CGPoint(x: cx - 28, y: h * 0.36),
+                CGPoint(x: cx - 44, y: h * 0.52),
+                CGPoint(x: cx - 64, y: h * 0.66),
+                CGPoint(x: cx - 92, y: h * 0.84),
+                CGPoint(x: 0, y: h),
+                CGPoint(x: cx, y: h),
+            ]
+        }
     }
 
-    private func drawStage5(context: GraphicsContext, size: CGSize) {
-        drawBackRidge(context: context, size: size)
-        let (mp, peak) = steppedMatterhornPath(size: size, peakFactor: 0.96)
-        context.fill(mp, with: mountainFillShading(topY: peak.y, bottomY: size.height, midX: peak.x))
-        drawRidgeHighlights(context: context, peak: peak, size: size, w: size.width)
-        var left2 = Path()
-        left2.move(to: CGPoint(x: peak.x - 2, y: peak.y + 6))
-        left2.addLine(to: CGPoint(x: peak.x - size.width * 0.24, y: size.height * 0.46))
-        var right2 = Path()
-        right2.move(to: CGPoint(x: peak.x + 2, y: peak.y + 6))
-        right2.addLine(to: CGPoint(x: peak.x + size.width * 0.20, y: size.height * 0.46))
-        let hi = Color(red: 180 / 255, green: 140 / 255, blue: 255 / 255).opacity(0.55)
-        context.stroke(left2, with: .color(hi), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-        context.stroke(right2, with: .color(hi), style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-        drawSnowAndPeak(context: context, peak: peak, capHalfWidth: 18)
+    private func rightFacePoints(cx: CGFloat, w: CGFloat, h: CGFloat, tipY: CGFloat, stage: Int) -> [CGPoint] {
+        switch stage {
+        case 3:
+            return [
+                CGPoint(x: cx, y: tipY),
+                CGPoint(x: cx + 7, y: tipY + h * 0.08),
+                CGPoint(x: cx + 20, y: h * 0.3),
+                CGPoint(x: cx + 40, y: h * 0.52),
+                CGPoint(x: cx + 72, y: h * 0.76),
+                CGPoint(x: w, y: h),
+                CGPoint(x: cx, y: h),
+            ]
+        case 4:
+            return [
+                CGPoint(x: cx, y: tipY),
+                CGPoint(x: cx + 6, y: tipY + h * 0.06),
+                CGPoint(x: cx + 16, y: h * 0.24),
+                CGPoint(x: cx + 34, y: h * 0.44),
+                CGPoint(x: cx + 56, y: h * 0.62),
+                CGPoint(x: cx + 82, y: h * 0.8),
+                CGPoint(x: w, y: h),
+                CGPoint(x: cx, y: h),
+            ]
+        default:
+            return [
+                CGPoint(x: cx, y: tipY),
+                CGPoint(x: cx + 5, y: tipY + h * 0.05),
+                CGPoint(x: cx + 13, y: h * 0.2),
+                CGPoint(x: cx + 28, y: h * 0.36),
+                CGPoint(x: cx + 44, y: h * 0.52),
+                CGPoint(x: cx + 64, y: h * 0.66),
+                CGPoint(x: cx + 92, y: h * 0.84),
+                CGPoint(x: w, y: h),
+                CGPoint(x: cx, y: h),
+            ]
+        }
+    }
+
+    private func fillFace(
+        context: GraphicsContext,
+        points: [CGPoint],
+        start: CGPoint,
+        end: CGPoint,
+        stops: [(Color, CGFloat)],
+    ) {
+        var path = Path()
+        guard let first = points.first else { return }
+        path.move(to: first)
+        for p in points.dropFirst() {
+            path.addLine(to: p)
+        }
+        path.closeSubpath()
+        let gradient = Gradient(stops: stops.map { Gradient.Stop(color: $0.0, location: $0.1) })
+        context.fill(path, with: .linearGradient(gradient, startPoint: start, endPoint: end))
+    }
+
+    private func drawRightShadow(context: GraphicsContext, cx: CGFloat, tipY: CGFloat, w: CGFloat, h: CGFloat) {
+        var tri = Path()
+        tri.move(to: CGPoint(x: cx + 4, y: tipY + h * 0.04))
+        tri.addLine(to: CGPoint(x: w * 0.92, y: h * 0.58))
+        tri.addLine(to: CGPoint(x: cx + 28, y: h * 0.52))
+        tri.closeSubpath()
+        context.fill(tri, with: .color(Color(red: 140 / 255, green: 100 / 255, blue: 200 / 255, opacity: 0.3)))
+    }
+
+    private func drawSnowCap(context: GraphicsContext, cx: CGFloat, tipY: CGFloat, h: CGFloat, halfWidth: CGFloat) {
+        let tip = CGPoint(x: cx, y: tipY)
+        let p1 = CGPoint(x: cx - halfWidth * 0.25, y: tipY + h * 0.04)
+        let p2 = CGPoint(x: cx - halfWidth, y: tipY + h * 0.10)
+        let p3 = CGPoint(x: cx - halfWidth * 0.65, y: tipY + h * 0.15)
+        let p4 = CGPoint(x: cx + halfWidth * 0.6, y: tipY + h * 0.15)
+        let p5 = CGPoint(x: cx + halfWidth * 0.22, y: tipY + h * 0.045)
+        var poly = Path()
+        poly.move(to: tip)
+        poly.addLine(to: p1)
+        poly.addLine(to: p2)
+        poly.addLine(to: p3)
+        poly.addLine(to: p4)
+        poly.addLine(to: p5)
+        poly.closeSubpath()
+        context.fill(
+            poly,
+            with: .linearGradient(
+                Gradient(stops: [
+                    .init(color: Color(red: 235 / 255, green: 225 / 255, blue: 255 / 255, opacity: 0.95), location: 0),
+                    .init(color: Color.white, location: 0.3),
+                    .init(color: Color(red: 220 / 255, green: 210 / 255, blue: 245 / 255, opacity: 0.85), location: 0.7),
+                    .init(color: Color(red: 150 / 255, green: 120 / 255, blue: 210 / 255, opacity: 0), location: 1),
+                ]),
+                startPoint: tip,
+                endPoint: CGPoint(x: cx, y: tipY + h * 0.16),
+            ),
+        )
+    }
+
+    private func drawTipGlowLarge(
+        context: GraphicsContext,
+        center: CGPoint,
+        inner: Color,
+        mid: Color,
+        radius: CGFloat,
+    ) {
+        var oval = Path()
+        oval.addEllipse(in: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+        context.fill(
+            oval,
+            with: .radialGradient(
+                Gradient(stops: [
+                    .init(color: inner, location: 0),
+                    .init(color: mid, location: 0.45),
+                    .init(color: .clear, location: 1),
+                ]),
+                center: center,
+                startRadius: 0,
+                endRadius: radius,
+            ),
+        )
+    }
+
+    private func drawAurora(context: GraphicsContext, w: CGFloat, h: CGFloat, cx: CGFloat) {
+        var w1 = Path()
+        w1.move(to: CGPoint(x: cx - 40, y: h * 0.3))
+        w1.addCurve(
+            to: CGPoint(x: cx + 50, y: h * 0.28),
+            control1: CGPoint(x: cx - 20, y: h * 0.15),
+            control2: CGPoint(x: cx + 10, y: h * 0.22),
+        )
+        context.stroke(
+            w1,
+            with: .color(Color(red: 140 / 255, green: 90 / 255, blue: 220 / 255, opacity: 0.2)),
+            style: StrokeStyle(lineWidth: 2, lineCap: .round),
+        )
+        var w2 = Path()
+        w2.move(to: CGPoint(x: cx - 55, y: h * 0.4))
+        w2.addCurve(
+            to: CGPoint(x: cx + 60, y: h * 0.38),
+            control1: CGPoint(x: cx - 25, y: h * 0.22),
+            control2: CGPoint(x: cx + 15, y: h * 0.3),
+        )
+        context.stroke(
+            w2,
+            with: .color(Color(red: 120 / 255, green: 70 / 255, blue: 200 / 255, opacity: 0.12)),
+            style: StrokeStyle(lineWidth: 1.5, lineCap: .round),
+        )
     }
 }
