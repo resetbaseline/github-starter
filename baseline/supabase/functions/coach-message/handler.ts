@@ -12,11 +12,15 @@ function buildSystemPrompt(args: {
   journalLines: string[];
   todayContext: string;
   sessionInstruction: string;
+  longTermGoalsBlock: string;
 }): string {
   const parts: string[] = [COACH_VOICE_SYSTEM_PROMPT];
 
   parts.push("\n## User memory profile (long-term)\n");
   parts.push(JSON.stringify(args.memory ?? {}, null, 2));
+
+  parts.push("\n## Long term goals\n");
+  parts.push(args.longTermGoalsBlock);
 
   parts.push("\n## Recent session journal (newest summaries last; read oldest→newest for arc)\n");
   parts.push(args.journalLines.length ? args.journalLines.join("\n---\n") : "(none yet)");
@@ -29,6 +33,10 @@ function buildSystemPrompt(args: {
 
   parts.push(
     "\nIf you take a product action, append a JSON object inside <action></action> after your reply text. Shape: {\"type\":\"add_goal\"|\"update_schedule\"|\"set_tomorrow_intention\"|\"start_focus_block\",\"params\":{...}}",
+  );
+
+  parts.push(
+    "\nWhen Long term goals above is not \"(none active)\", keep those ambitions in mind as background—do not claim progress the user has not stated in this session.",
   );
 
   return parts.join("\n");
@@ -103,6 +111,7 @@ export async function coachMessage(
     { data: nnGoals, error: gErr },
     { data: streakRow, error: sErr },
     { data: history, error: hErr },
+    { data: userGoals, error: ugErr },
   ] = await Promise.all([
     sb.from("coach_memory_profile").select("*").eq("user_id", userId).maybeSingle(),
     sb
@@ -119,10 +128,16 @@ export async function coachMessage(
       .select("role,message,created_at")
       .eq("session_id", input.session_id)
       .order("created_at", { ascending: true }),
+    sb
+      .from("user_goals")
+      .select("id,category,long_term_goal,goal_name,target_date,daily_action_suggestion,order_index,active")
+      .eq("user_id", userId)
+      .eq("active", true)
+      .order("order_index", { ascending: true }),
   ]);
 
-  if (mErr || jErr || gErr || sErr || hErr) {
-    const err = mErr ?? jErr ?? gErr ?? sErr ?? hErr!;
+  if (mErr || jErr || gErr || sErr || hErr || ugErr) {
+    const err = mErr ?? jErr ?? gErr ?? sErr ?? hErr ?? ugErr!;
     return { data: null, error: { message: err.message, code: err.code, detail: err.details ?? undefined } };
   }
 
@@ -135,6 +150,18 @@ export async function coachMessage(
 
   const nnList = (nnGoals ?? []) as { id: string; text: string; status: string }[];
   const nnText = nnList.map((g) => `- ${g.text} (${g.status})`).join("\n") || "(none)";
+
+  const userGoalRows = (userGoals ?? []) as { category?: string; long_term_goal?: string; goal_name?: string }[];
+  const longTermGoalsBlock =
+    userGoalRows.length === 0
+      ? "(none active)"
+      : userGoalRows
+          .map((row) => {
+            const cat = String(row.category ?? "");
+            const lt = String(row.long_term_goal ?? row.goal_name ?? "");
+            return `- [${cat}] ${lt}`;
+          })
+          .join("\n");
 
   const streak = streakRow as { current_count: number; max_count: number; active: boolean } | null;
   const nowLocal = calendarToday(now, tz);
@@ -153,6 +180,7 @@ export async function coachMessage(
     journalLines,
     todayContext,
     sessionInstruction: sessionTypeInstruction(input.session_type),
+    longTermGoalsBlock,
   });
 
   const histMsgs: AnthropicMessage[] = ((history ?? []) as { role: string; message: string }[])
