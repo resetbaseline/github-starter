@@ -6,7 +6,7 @@ struct DayResultView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 10) {
-                ResultProgressBarView()
+                ResultProgressBarView(totalSteps: 4)
 
                 Text(viewModel.dayStatusHeadline + ".")
                     .font(.system(size: 20, weight: .light, design: .serif))
@@ -141,10 +141,12 @@ struct DayResultView: View {
 // MARK: - Progress (complete)
 
 private struct ResultProgressBarView: View {
+    let totalSteps: Int
+
     var body: some View {
         VStack(alignment: .trailing, spacing: 6) {
             HStack(spacing: 4) {
-                ForEach(0 ..< 3, id: \.self) { _ in
+                ForEach(0 ..< totalSteps, id: \.self) { _ in
                     Capsule()
                         .fill(Theme.Colors.accent)
                         .frame(maxWidth: .infinity)

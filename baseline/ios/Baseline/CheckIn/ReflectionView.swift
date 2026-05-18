@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ReflectionView: View {
     @EnvironmentObject private var viewModel: CheckInViewModel
+    @EnvironmentObject private var auth: AuthManager
 
     private var hasChipSelection: Bool {
         viewModel.selectedChips.values.contains { !$0.isEmpty }
@@ -10,7 +11,7 @@ struct ReflectionView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 14) {
-                ProgressBarView(currentStep: 2, totalSteps: 3, showTimeEstimate: false)
+                ProgressBarView(currentStep: 2, totalSteps: 4, showTimeEstimate: false)
 
                 ForEach(viewModel.selectedQuestions) { question in
                     questionBlock(question)
@@ -57,25 +58,8 @@ struct ReflectionView: View {
                         )
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Tomorrow's intention (optional)")
-                        .font(.system(size: 9))
-                        .foregroundStyle(Theme.Colors.textMuted)
-                    TextField("", text: $viewModel.tomorrowIntention, axis: .vertical)
-                        .font(.system(size: 13))
-                        .foregroundStyle(Theme.Colors.textPrimary)
-                        .lineLimit(1 ... 3)
-                        .padding(7)
-                        .background(Color(hex: "#0F0F0F"))
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(Color(hex: "#1A1A1A"), lineWidth: 1),
-                        )
-                }
-
-                BaselineButton(title: "Finish check-in →") {
-                    viewModel.submitReflectionAndShowResult()
+                BaselineButton(title: "Plan tomorrow →") {
+                    viewModel.submitReflectionAndShowResult(auth: auth)
                 }
             }
             .padding(.horizontal, 16)

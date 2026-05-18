@@ -10,12 +10,21 @@ struct CheckInGoalRow: Identifiable, Equatable {
     var completed: Bool
 }
 
+struct TomorrowGoalDraft: Identifiable, Equatable {
+    let id: UUID
+    var text: String
+    var category: String
+    var isAccepted: Bool
+    var isSuggested: Bool
+}
+
 @MainActor
 final class CheckInViewModel: ObservableObject {
     enum Step: Int, CaseIterable {
         case goalReview = 0
         case reflection = 1
-        case dayResult = 2
+        case planTomorrow = 2
+        case dayResult = 3
     }
 
     @Published var step: Step = .goalReview
@@ -40,6 +49,9 @@ final class CheckInViewModel: ObservableObject {
 
     @Published var tomorrowIntention: String = ""
 
+    @Published var tomorrowNonNegotiables: [TomorrowGoalDraft] = []
+    @Published var tomorrowOtherGoals: [TomorrowGoalDraft] = []
+
     /// After `finalizeResult()`: `strong`, `solid`, or `light` (same vocabulary as Supabase `day_status`).
     @Published private(set) var computedDayStatus: String = ""
 
@@ -60,6 +72,18 @@ final class CheckInViewModel: ObservableObject {
 
     init() {
         loadInitialDraft()
+    }
+
+    /// Suggested rows the coach pre-filled (carryovers + long-term daily actions).
+    var coachSuggestedGoals: [TomorrowGoalDraft] {
+        tomorrowNonNegotiables.filter(\.isSuggested) + tomorrowOtherGoals.filter(\.isSuggested)
+    }
+
+    var suggestedIntentionText: String {
+        if let first = tomorrowNonNegotiables.first(where: { $0.isAccepted }) {
+            return "Start with \(first.text) — set a focus block for the morning."
+        }
+        return "Decide on one non-negotiable before the day starts."
     }
 
     /// Counts reflection questions with at least one chip selected.
@@ -99,10 +123,56 @@ final class CheckInViewModel: ObservableObject {
         Theme.Haptics.lightImpact()
     }
 
-    func submitReflectionAndShowResult() {
+    func goToPlanTomorrow(auth: AuthManager) {
+        populateTomorrowDrafts(from: auth)
+        step = .planTomorrow
+        Theme.Haptics.lightImpact()
+    }
+
+    func submitReflectionAndShowResult(auth: AuthManager) {
+        goToPlanTomorrow(auth: auth)
+    }
+
+    func finalizePlanAndShowResult() {
         finalizeResult()
         step = .dayResult
         Theme.Haptics.lightImpact()
+    }
+
+    func acceptSuggestion(id: UUID) {
+        if let i = tomorrowNonNegotiables.firstIndex(where: { $0.id == id }) {
+            var row = tomorrowNonNegotiables[i]
+            row.isAccepted.toggle()
+            tomorrowNonNegotiables[i] = row
+            return
+        }
+        if let i = tomorrowOtherGoals.firstIndex(where: { $0.id == id }) {
+            var row = tomorrowOtherGoals[i]
+            row.isAccepted.toggle()
+            tomorrowOtherGoals[i] = row
+        }
+    }
+
+    func addCustomTomorrowGoal(text: String, isNonNegotiable: Bool) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let draft = TomorrowGoalDraft(
+            id: UUID(),
+            text: trimmed,
+            category: isNonNegotiable ? "Must-do" : "Custom",
+            isAccepted: true,
+            isSuggested: false,
+        )
+        if isNonNegotiable {
+            tomorrowNonNegotiables.append(draft)
+        } else {
+            tomorrowOtherGoals.append(draft)
+        }
+    }
+
+    func removeTomorrowGoal(id: UUID) {
+        tomorrowNonNegotiables.removeAll { $0.id == id }
+        tomorrowOtherGoals.removeAll { $0.id == id }
     }
 
     func goBack() {
@@ -158,6 +228,50 @@ final class CheckInViewModel: ObservableObject {
             dayOfWeek: 3,
         )
         tomorrowIntention = ""
+        tomorrowNonNegotiables = []
+        tomorrowOtherGoals = []
+    }
+
+    private func populateTomorrowDrafts(from auth: AuthManager) {
+        let incomplete = goals.filter { !$0.completed }
+        tomorrowNonNegotiables = incomplete.prefix(3).map { goal in
+            TomorrowGoalDraft(
+                id: UUID(),
+                text: goal.title,
+                category: goal.isNonNegotiable ? "Non-negotiable" : "Today",
+                isAccepted: true,
+                isSuggested: true,
+            )
+        }
+
+        tomorrowOtherGoals = auth.longTermGoals.map { lt in
+            TomorrowGoalDraft(
+                id: UUID(),
+                text: Self.dailyActionLine(longTermText: lt.text, category: lt.category),
+                category: lt.category,
+                isAccepted: false,
+                isSuggested: true,
+            )
+        }
+    }
+
+    private static func dailyActionLine(longTermText: String, category: String) -> String {
+        switch category {
+        case "Work":
+            return "30 min on: \(longTermText)"
+        case "Health":
+            return "Complete: \(longTermText)"
+        case "Learning":
+            return "Study session: \(longTermText)"
+        case "Creative":
+            return "Create: \(longTermText)"
+        case "Finance":
+            return "Review: \(longTermText)"
+        case "Personal":
+            return longTermText
+        default:
+            return longTermText
+        }
     }
 
     /// Mirrors `process-checkin` `classifyDayResult` (without `rest` / `skipped` paths used here).

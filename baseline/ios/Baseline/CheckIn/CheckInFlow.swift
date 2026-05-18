@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Three-step check-in: goal review → chip reflection → day result. Owns `CheckInViewModel` and navigation chrome.
+/// Four-step check-in: goal review → reflection → plan tomorrow → day result. Owns `CheckInViewModel` and navigation chrome.
 struct CheckInFlow: View {
     @StateObject private var viewModel = CheckInViewModel()
 
@@ -12,6 +12,8 @@ struct CheckInFlow: View {
                     GoalReviewView()
                 case .reflection:
                     ReflectionView()
+                case .planTomorrow:
+                    PlanTomorrowView()
                 case .dayResult:
                     DayResultView()
                 }

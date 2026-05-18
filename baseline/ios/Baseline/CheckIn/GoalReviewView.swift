@@ -7,7 +7,7 @@ struct GoalReviewView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 16) {
-                ProgressBarView(currentStep: 1, totalSteps: 3, showTimeEstimate: true)
+                ProgressBarView(currentStep: 1, totalSteps: 4, showTimeEstimate: true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(greetingLine + ".")
