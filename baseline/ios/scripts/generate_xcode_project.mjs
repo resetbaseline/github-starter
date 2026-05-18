@@ -29,6 +29,7 @@ const swiftFiles = [
   "Baseline/Home/MountainProgressView.swift",
   "Baseline/Home/HomeViewModel.swift",
   "Baseline/CheckIn/CheckInFlow.swift",
+  "Baseline/CheckIn/ReflectionQuestionBank.swift",
   "Baseline/CheckIn/GoalReviewView.swift",
   "Baseline/CheckIn/ReflectionView.swift",
   "Baseline/CheckIn/DayResultView.swift",
@@ -194,6 +195,7 @@ line(
 line(
   grp(g.ci, "CheckIn", "CheckIn", [
     `${fileRef["Baseline/CheckIn/CheckInFlow.swift"]} /* CheckInFlow.swift */`,
+    `${fileRef["Baseline/CheckIn/ReflectionQuestionBank.swift"]} /* ReflectionQuestionBank.swift */`,
     `${fileRef["Baseline/CheckIn/GoalReviewView.swift"]} /* GoalReviewView.swift */`,
     `${fileRef["Baseline/CheckIn/ReflectionView.swift"]} /* ReflectionView.swift */`,
     `${fileRef["Baseline/CheckIn/DayResultView.swift"]} /* DayResultView.swift */`,

@@ -10,14 +10,6 @@ struct CheckInGoalRow: Identifiable, Equatable {
     var completed: Bool
 }
 
-/// Draft reflection row (maps to `reflection_answers`: question_text, answer, category).
-struct ReflectionDraft: Identifiable, Equatable {
-    let id: UUID
-    let questionText: String
-    let category: String
-    var answer: String
-}
-
 @MainActor
 final class CheckInViewModel: ObservableObject {
     enum Step: Int, CaseIterable {
@@ -29,7 +21,19 @@ final class CheckInViewModel: ObservableObject {
     @Published var step: Step = .goalReview
 
     @Published var goals: [CheckInGoalRow] = []
-    @Published var reflectionDrafts: [ReflectionDraft] = []
+
+    /// Maps reflection question id → selected chip labels.
+    @Published var selectedChips: [UUID: Set<String>] = [:]
+
+    @Published var openEndedText: String = ""
+
+    /// Client-side coach blurb (kept in sync with `aiSuggestionText`).
+    @Published var aiSuggestion: String = ""
+
+    @Published var selectedQuestions: [ReflectionQuestion] = []
+
+    /// Mock gate opens today (for question routing).
+    @Published var gateCount: Int = 2
 
     /// Mock focus minutes for the day (from `days.focus_minutes_total` when wired).
     @Published var focusMinutesTotal: Int = 32
@@ -58,23 +62,36 @@ final class CheckInViewModel: ObservableObject {
         loadInitialDraft()
     }
 
+    /// Counts reflection questions with at least one chip selected.
     var reflectionAnswerCount: Int {
-        reflectionDrafts.filter { !$0.answer.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }.count
+        selectedQuestions.filter { !(selectedChips[$0.id, default: []].isEmpty) }.count
+    }
+
+    var aiSuggestionText: String {
+        aiSuggestion
+    }
+
+    func toggleChip(questionId: UUID, chip: String) {
+        var next = selectedChips
+        var set = next[questionId, default: []]
+        if set.contains(chip) {
+            set.remove(chip)
+        } else {
+            set.insert(chip)
+        }
+        if set.isEmpty {
+            next.removeValue(forKey: questionId)
+        } else {
+            next[questionId] = set
+        }
+        selectedChips = next
+        aiSuggestion = Self.buildCoachObservation(selectedChips: next)
     }
 
     func toggleGoal(id: UUID) {
         guard let i = goals.firstIndex(where: { $0.id == id }) else { return }
         goals[i].completed.toggle()
         Theme.Haptics.lightImpact()
-    }
-
-    func updateReflectionAnswer(id: UUID, text: String) {
-        guard let i = reflectionDrafts.firstIndex(where: { $0.id == id }) else { return }
-        reflectionDrafts[i].answer = text
-    }
-
-    func answer(for id: UUID) -> String {
-        reflectionDrafts.first(where: { $0.id == id })?.answer ?? ""
     }
 
     func goToReflection() {
@@ -127,26 +144,19 @@ final class CheckInViewModel: ObservableObject {
             CheckInGoalRow(id: Self.stableGoalIds[4], title: "Plan tomorrow in Baseline", isNonNegotiable: false, completed: false),
         ]
 
-        reflectionDrafts = [
-            ReflectionDraft(
-                id: UUID(uuidString: "20000000-0000-4000-8000-000000000001")!,
-                questionText: "What mattered most in how you used your time today?",
-                category: "universal",
-                answer: "",
-            ),
-            ReflectionDraft(
-                id: UUID(uuidString: "20000000-0000-4000-8000-000000000002")!,
-                questionText: "Where did friction show up—and was it useful?",
-                category: "universal",
-                answer: "",
-            ),
-            ReflectionDraft(
-                id: UUID(uuidString: "20000000-0000-4000-8000-000000000003")!,
-                questionText: "What is one thing you want to carry into tomorrow unchanged?",
-                category: "universal",
-                answer: "",
-            ),
-        ]
+        selectedChips = [:]
+        openEndedText = ""
+        aiSuggestion = Self.buildCoachObservation(selectedChips: [:])
+
+        let mockGoalsCompleted = 2
+        let mockGoalsTotal = 5
+        selectedQuestions = ReflectionQuestionBank.selectQuestionsForDay(
+            gateCount: gateCount,
+            focusMinutes: focusMinutesTotal,
+            goalsCompleted: mockGoalsCompleted,
+            goalsTotal: mockGoalsTotal,
+            dayOfWeek: 3,
+        )
         tomorrowIntention = ""
     }
 
@@ -183,12 +193,39 @@ final class CheckInViewModel: ObservableObject {
     private func applyLightStreakOutcome() {
         streakAfter = useStreakFreeze ? streakBefore : 0
     }
+
+    private static func buildCoachObservation(selectedChips: [UUID: Set<String>]) -> String {
+        let flat = Set(selectedChips.values.flatMap { $0 })
+        if flat.contains("Low energy") {
+            return "Low energy day noted — afternoon looks like the weak point. Want to front-load tomorrow?"
+        }
+        if flat.contains("A little") {
+            return "Some scrolling, manageable. Worth watching if it becomes a pattern."
+        }
+        if flat.contains("It took over") {
+            return "Phone took over today. The gate data will have more context."
+        }
+        if flat.contains("Crashed midday") {
+            return "Midday crash logged — consider a lighter morning or a real lunch break tomorrow."
+        }
+        if flat.contains("Way too many") {
+            return "List overload today. Tomorrow might feel better with one fewer must-do."
+        }
+        return "Selections noted. Coach will use these in tonight's note."
+    }
 }
 
 extension CheckInViewModel {
-    /// Human-readable status for UI (no win/loss wording).
     var goalsCompletedCount: Int {
         goals.filter(\.completed).count
+    }
+
+    var nonNegotiableCompletedCount: Int {
+        goals.filter { $0.isNonNegotiable && $0.completed }.count
+    }
+
+    var nonNegotiableTotalCount: Int {
+        goals.filter(\.isNonNegotiable).count
     }
 
     var dayStatusHeadline: String {
@@ -227,5 +264,23 @@ extension CheckInViewModel {
             return "Streak resets to zero from this light day (mock—server will set the new start date)."
         }
         return "Streak unchanged for this outcome."
+    }
+
+    /// Stub coach note for the result screen.
+    var coachNotePreview: String {
+        let chips = selectedChips.values.flatMap { $0 }.sorted()
+        let chipSnippet = chips.first.map { " You flagged “\($0)” in reflection." } ?? ""
+        switch computedDayStatus {
+        case "strong":
+            return "Strong finish—baseline held across non-negotiables and reflection.\(chipSnippet) I’ll fold that into tonight’s note."
+        case "solid":
+            return "Solid day: progress without a perfect sweep is still signal.\(chipSnippet) We’ll build from here."
+        case "light":
+            return "Light day logged—no shame, just data.\(chipSnippet) We can tighten the plan when you’re ready."
+        case "skipped":
+            return "Day marked skipped for streak math.\(chipSnippet) Fresh start whenever you want it."
+        default:
+            return "Thanks for checking in.\(chipSnippet)"
+        }
     }
 }
