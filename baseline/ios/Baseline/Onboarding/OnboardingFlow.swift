@@ -13,7 +13,7 @@ struct OnboardingFlow: View {
                     .tag(1)
                 OnboardingScreen3()
                     .tag(2)
-                OnboardingScreen4()
+                LongTermGoalsView()
                     .tag(3)
                 OnboardingSetupView()
                     .tag(4)
@@ -22,7 +22,11 @@ struct OnboardingFlow: View {
             .animation(Theme.Animation.screenTransition, value: onboarding.step)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            bottomChrome
+            if onboarding.step != 0 && !onboarding.isLongTermGoalsStep {
+                bottomChrome
+            } else if onboarding.isLongTermGoalsStep {
+                longTermGoalsBottomChrome
+            }
         }
         .environmentObject(onboarding)
         .background(Theme.Colors.background.ignoresSafeArea())
@@ -48,6 +52,29 @@ struct OnboardingFlow: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
+            }
+        }
+        .padding(.horizontal, Theme.Spacing.md)
+        .padding(.top, Theme.Spacing.sm)
+        .padding(.bottom, Theme.Spacing.md)
+        .background(
+            Theme.Colors.surface
+                .shadow(color: .black.opacity(0.35), radius: 12, y: -4)
+        )
+    }
+
+    /// Long-term goals screen includes its own Continue / Skip; keep dots + Back only.
+    private var longTermGoalsBottomChrome: some View {
+        VStack(spacing: Theme.Spacing.md) {
+            pageDots
+            HStack(spacing: Theme.Spacing.sm) {
+                Button("Back") {
+                    onboarding.goBack()
+                }
+                .font(Theme.Typography.headline())
+                .foregroundStyle(Theme.Colors.textSecondary)
+                .buttonStyle(.plain)
+                Spacer(minLength: 0)
             }
         }
         .padding(.horizontal, Theme.Spacing.md)

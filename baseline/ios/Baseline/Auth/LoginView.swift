@@ -30,7 +30,16 @@ struct LoginView: View {
                 .accessibilityIdentifier("login.previewOnboarding")
 
                 Button("Preview signed-in home") {
-                    auth.completeOnboarding(preferredName: nil)
+                    auth.completeOnboarding(
+                        preferredName: nil,
+                        wakeTime:
+                            Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ??
+                            Date(),
+                        checkInTime:
+                            Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: Date()) ??
+                            Date(),
+                        longTermGoals: [],
+                    )
                 }
                 .font(Theme.Typography.subheadline())
                 .foregroundStyle(Theme.Colors.textMuted)
