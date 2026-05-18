@@ -16,6 +16,8 @@ struct OnboardingContentPage: View {
 
                 Text(headline)
                     .font(Theme.Typography.title1())
+                    .fontDesign(.serif)
+                    .fontWeight(.thin)
                     .foregroundStyle(Theme.Colors.textPrimary)
                     .fixedSize(horizontal: false, vertical: true)
 
