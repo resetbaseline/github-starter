@@ -51,6 +51,7 @@ const swiftFiles = [
   "Baseline/Shared/APIClient.swift",
   "Baseline/Shared/SupabaseClient.swift",
   "Baseline/Shared/Components/BaselineButton.swift",
+  "Baseline/Shared/Components/CoachAssistModal.swift",
   "Baseline/Shared/Components/GoalRowView.swift",
   "Baseline/Shared/Components/StreakBadgeView.swift",
   "Baseline/Models/Day.swift",
@@ -241,6 +242,7 @@ line(
 line(
   grp(g.comp, "Components", "Components", [
     `${fileRef["Baseline/Shared/Components/BaselineButton.swift"]} /* BaselineButton.swift */`,
+    `${fileRef["Baseline/Shared/Components/CoachAssistModal.swift"]} /* CoachAssistModal.swift */`,
     `${fileRef["Baseline/Shared/Components/GoalRowView.swift"]} /* GoalRowView.swift */`,
     `${fileRef["Baseline/Shared/Components/StreakBadgeView.swift"]} /* StreakBadgeView.swift */`,
   ]),

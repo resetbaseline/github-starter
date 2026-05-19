@@ -197,13 +197,13 @@ final class CheckInViewModel: ObservableObject {
         }
     }
 
-    func addCustomTomorrowGoal(text: String, isNonNegotiable: Bool) {
+    func addCustomTomorrowGoal(text: String, category: String = "Work", isNonNegotiable: Bool) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         let draft = TomorrowGoalDraft(
             id: UUID(),
             text: trimmed,
-            category: isNonNegotiable ? "Must-do" : "Custom",
+            category: category,
             isAccepted: true,
             isSuggested: false,
         )

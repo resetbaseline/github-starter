@@ -82,6 +82,40 @@ final class HomeViewModel: ObservableObject {
         isLoading = false
     }
 
+    func addNonNegotiable(text: String, category: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        let item = HomeGoalItem(
+            id: UUID(),
+            title: trimmed,
+            category: category,
+            timeLabel: "—",
+            isNonNegotiable: true,
+            isCompleted: false,
+        )
+        goals.append(item)
+        sortGoals()
+        refreshGoalCounts()
+    }
+
+    func removeGoal(id: UUID) {
+        goals.removeAll { $0.id == id }
+        refreshGoalCounts()
+    }
+
+    private func sortGoals() {
+        goals.sort { a, b in
+            if a.isNonNegotiable != b.isNonNegotiable { return a.isNonNegotiable && !b.isNonNegotiable }
+            return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
+        }
+    }
+
+    private func refreshGoalCounts() {
+        goalsTotal = goals.count
+        goalsCompleted = goals.filter(\.isCompleted).count
+    }
+
     private func applyMockSnapshot() {
         streakCurrent = 7
         streakMax = 12
@@ -135,7 +169,6 @@ final class HomeViewModel: ObservableObject {
             return a.title.localizedCaseInsensitiveCompare(b.title) == .orderedAscending
         }
 
-        goalsTotal = goals.count
-        goalsCompleted = goals.filter(\.isCompleted).count
+        refreshGoalCounts()
     }
 }

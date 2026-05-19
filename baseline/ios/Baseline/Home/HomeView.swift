@@ -3,6 +3,7 @@ import SwiftUI
 struct HomeView: View {
     @EnvironmentObject private var auth: AuthManager
     @StateObject private var viewModel = HomeViewModel()
+    @State private var showCoachAssist = false
 
     var body: some View {
         ZStack(alignment: .top) {
@@ -18,7 +19,7 @@ struct HomeView: View {
                     VStack(spacing: 8) {
                         MountainProgressCard()
                         progressBarRow
-                        NonNegotiablesSection()
+                        NonNegotiablesSection(showCoachAssist: $showCoachAssist)
                         OtherGoalsSection()
                         focusSessionCard
                         checkInCard
@@ -38,6 +39,17 @@ struct HomeView: View {
             }
         }
         .environmentObject(viewModel)
+        .sheet(isPresented: $showCoachAssist) {
+            CoachAssistModal(
+                isPresented: $showCoachAssist,
+                longTermGoals: auth.longTermGoals,
+                onAdd: { text, category in
+                    viewModel.addNonNegotiable(text: text, category: category)
+                },
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.hidden)
+        }
     }
 
     private var topStrip: some View {
@@ -221,6 +233,7 @@ private struct MountainProgressCard: View {
 
 private struct NonNegotiablesSection: View {
     @EnvironmentObject private var viewModel: HomeViewModel
+    @Binding var showCoachAssist: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -243,6 +256,7 @@ private struct NonNegotiablesSection: View {
                             .background(Color(hex: "#0F0F0F"))
                     }
                 }
+                addNonNegotiableRow
             }
             .background(Color(hex: "#0C0C0C"))
             .clipShape(RoundedRectangle(cornerRadius: 11, style: .continuous))
@@ -251,6 +265,29 @@ private struct NonNegotiablesSection: View {
                     .stroke(Color(hex: "#161616"), lineWidth: 0.5),
             )
         }
+    }
+
+    private var addNonNegotiableRow: some View {
+        Button {
+            showCoachAssist = true
+        } label: {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(Color(hex: "#2A2A2A"), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                        .frame(width: 14, height: 14)
+                    Image(systemName: "plus")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundStyle(Color(hex: "#444444"))
+                }
+                Text("Add non-negotiable")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color(hex: "#444444"))
+                Spacer(minLength: 0)
+            }
+            .padding(EdgeInsets(top: 5, leading: 9, bottom: 5, trailing: 9))
+        }
+        .buttonStyle(.plain)
     }
 
     private func nonNegotiableRow(_ goal: HomeGoalItem) -> some View {

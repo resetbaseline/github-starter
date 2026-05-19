@@ -2,9 +2,9 @@ import SwiftUI
 
 struct PlanTomorrowView: View {
     @EnvironmentObject private var viewModel: CheckInViewModel
+    @EnvironmentObject private var auth: AuthManager
 
-    @State private var isAddingNonNegotiable = false
-    @State private var nonNegotiableFieldText = ""
+    @State private var showCoachAssist = false
     @State private var isAddingOtherGoal = false
     @State private var otherGoalFieldText = ""
 
@@ -25,6 +25,17 @@ struct PlanTomorrowView: View {
             .padding(.vertical, 12)
         }
         .background(Theme.Colors.background)
+        .sheet(isPresented: $showCoachAssist) {
+            CoachAssistModal(
+                isPresented: $showCoachAssist,
+                longTermGoals: auth.longTermGoals,
+                onAdd: { text, category in
+                    viewModel.addCustomTomorrowGoal(text: text, category: category, isNonNegotiable: true)
+                },
+            )
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.hidden)
+        }
     }
 
     private var nonNegotiablesSection: some View {
@@ -40,29 +51,7 @@ struct PlanTomorrowView: View {
                 tomorrowGoalCard(draft)
             }
 
-            dashedAddButton(title: "Add a non-negotiable") {
-                isAddingNonNegotiable.toggle()
-                if !isAddingNonNegotiable {
-                    nonNegotiableFieldText = ""
-                }
-            }
-
-            if isAddingNonNegotiable {
-                TextField("Type and press return", text: $nonNegotiableFieldText)
-                    .font(.system(size: 13))
-                    .foregroundStyle(Theme.Colors.textPrimary)
-                    .padding(7)
-                    .background(Color(hex: "#0F0F0F"))
-                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(Color(hex: "#1A1A1A"), lineWidth: 1),
-                    )
-                    .onSubmit {
-                        viewModel.addCustomTomorrowGoal(text: nonNegotiableFieldText, isNonNegotiable: true)
-                        nonNegotiableFieldText = ""
-                    }
-            }
+            addNonNegotiableCoachAssistRow
         }
     }
 
@@ -223,6 +212,34 @@ struct PlanTomorrowView: View {
                     .foregroundStyle(Theme.Colors.textMuted)
                     .frame(width: 28, height: 28)
             }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var addNonNegotiableCoachAssistRow: some View {
+        Button {
+            showCoachAssist = true
+        } label: {
+            HStack(spacing: 8) {
+                ZStack {
+                    Circle()
+                        .strokeBorder(Color(hex: "#2A2A2A"), style: StrokeStyle(lineWidth: 1, dash: [3, 2]))
+                        .frame(width: 14, height: 14)
+                    Image(systemName: "plus")
+                        .font(.system(size: 8, weight: .medium))
+                        .foregroundStyle(Color(hex: "#444444"))
+                }
+                Text("Add non-negotiable")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color(hex: "#444444"))
+                Spacer(minLength: 0)
+            }
+            .padding(EdgeInsets(top: 5, leading: 9, bottom: 5, trailing: 9))
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [5, 4])),
+            )
         }
         .buttonStyle(.plain)
     }

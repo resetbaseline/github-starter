@@ -48,6 +48,7 @@
 		998EB2AF92DAC4DCD73FDBEF /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9E1C2666A930DB327CC4E09D /* APIClient.swift */; };
 		17DBF5920D4B1115F3B6E4A2 /* SupabaseClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FA9296C83B9229DE535ADF9 /* SupabaseClient.swift */; };
 		63E16452B3DEF77744DC6433 /* BaselineButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = F9534196D953269057E2873B /* BaselineButton.swift */; };
+		B8C0A55157A3D4E19F2C8E01 /* CoachAssistModal.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7B9C44046293D308E1B7D00 /* CoachAssistModal.swift */; };
 		69E06032E6422E874F0B33EC /* GoalRowView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AB509C6E3EDD8B2938C56F8 /* GoalRowView.swift */; };
 		5F1B41814AE03AC80F3D1822 /* StreakBadgeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7029764909D8493E68A01E26 /* StreakBadgeView.swift */; };
 		0432068355922841A00529A5 /* Day.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9E549729BF298087A139F99 /* Day.swift */; };
@@ -104,6 +105,7 @@
 		9E1C2666A930DB327CC4E09D /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		7FA9296C83B9229DE535ADF9 /* SupabaseClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SupabaseClient.swift; sourceTree = "<group>"; };
 		F9534196D953269057E2873B /* BaselineButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BaselineButton.swift; sourceTree = "<group>"; };
+		A7B9C44046293D308E1B7D00 /* CoachAssistModal.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CoachAssistModal.swift; sourceTree = "<group>"; };
 		6AB509C6E3EDD8B2938C56F8 /* GoalRowView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoalRowView.swift; sourceTree = "<group>"; };
 		7029764909D8493E68A01E26 /* StreakBadgeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreakBadgeView.swift; sourceTree = "<group>"; };
 		A9E549729BF298087A139F99 /* Day.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Day.swift; sourceTree = "<group>"; };
@@ -138,7 +140,7 @@
 		061DE0C62CB6DFF0F73E7BFE /* Profile */ = {isa = PBXGroup; children = (504DF53EA720219A5CA70F6B /* ProfileView.swift */, FFEAA4CA585CE41EEBF8F8EE /* ProfileViewModel.swift */); path = Profile; sourceTree = "<group>"; };
 		F826E2E7186B06759A4F4BFE /* Gate */ = {isa = PBXGroup; children = (2AADFC5536B6170529B2C652 /* GateView.swift */, 1713B1A432598FC01715A768 /* GateViewModel.swift */); path = Gate; sourceTree = "<group>"; };
 		D366670FB28CB859667FA210 /* MessageToSelf */ = {isa = PBXGroup; children = (C6A935F9F6280B0C60A0AE12 /* MessageToSelfView.swift */, 37584CF1C6E4B46082E5ED3C /* MessageToSelfViewModel.swift */); path = MessageToSelf; sourceTree = "<group>"; };
-		DEF721EA992AC842BAF7F8DE /* Components */ = {isa = PBXGroup; children = (F9534196D953269057E2873B /* BaselineButton.swift */, 6AB509C6E3EDD8B2938C56F8 /* GoalRowView.swift */, 7029764909D8493E68A01E26 /* StreakBadgeView.swift */); path = Components; sourceTree = "<group>"; };
+		DEF721EA992AC842BAF7F8DE /* Components */ = {isa = PBXGroup; children = (F9534196D953269057E2873B /* BaselineButton.swift */, A7B9C44046293D308E1B7D00 /* CoachAssistModal.swift */, 6AB509C6E3EDD8B2938C56F8 /* GoalRowView.swift */, 7029764909D8493E68A01E26 /* StreakBadgeView.swift */); path = Components; sourceTree = "<group>"; };
 		7BCE066EAF26C0648E3490F3 /* Shared */ = {isa = PBXGroup; children = (9E1C2666A930DB327CC4E09D /* APIClient.swift */, 7FA9296C83B9229DE535ADF9 /* SupabaseClient.swift */, DEF721EA992AC842BAF7F8DE /* Components */); path = Shared; sourceTree = "<group>"; };
 		62811DB90A3004F1C4290F01 /* Models */ = {isa = PBXGroup; children = (A9E549729BF298087A139F99 /* Day.swift */, 64B5B5C049F24656850355FA /* Goal.swift */, 67CE725D228F1DD5FDC79DBD /* Streak.swift */, DD7B570C4D1628B42077F248 /* CheckIn.swift */, E2F6AEB5BE434A8132504F80 /* User.swift */); path = Models; sourceTree = "<group>"; };
 		512719A8CA53E8B5CB996A45 /* Baseline */ = {isa = PBXGroup; children = (1D9F04E589A441D7454D6C09 /* App */, 9E18B92942D428B35B3CD772 /* Theme */, 55B57DBE07779F36859578A7 /* Auth */, 233369112C82D0D4F47C2098 /* Onboarding */, 937C8479EC9A21425371EB64 /* Home */, D397D95D84026B9F742B606B /* CheckIn */, F3CAD74F5E74515B492B89F0 /* Coach */, B29B59206FF45D749153FD6A /* Timers */, 061DE0C62CB6DFF0F73E7BFE /* Profile */, F826E2E7186B06759A4F4BFE /* Gate */, D366670FB28CB859667FA210 /* MessageToSelf */, 7BCE066EAF26C0648E3490F3 /* Shared */, 62811DB90A3004F1C4290F01 /* Models */, 8E6FFF1BF516CDFC07346ABC /* Assets.xcassets */); path = Baseline; sourceTree = "<group>"; };
@@ -248,6 +250,7 @@
 				998EB2AF92DAC4DCD73FDBEF /* APIClient.swift in Sources */,
 				17DBF5920D4B1115F3B6E4A2 /* SupabaseClient.swift in Sources */,
 				63E16452B3DEF77744DC6433 /* BaselineButton.swift in Sources */,
+				B8C0A55157A3D4E19F2C8E01 /* CoachAssistModal.swift in Sources */,
 				69E06032E6422E874F0B33EC /* GoalRowView.swift in Sources */,
 				5F1B41814AE03AC80F3D1822 /* StreakBadgeView.swift in Sources */,
 				0432068355922841A00529A5 /* Day.swift in Sources */,
