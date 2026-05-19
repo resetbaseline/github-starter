@@ -4,6 +4,8 @@ struct ReflectionView: View {
     @EnvironmentObject private var viewModel: CheckInViewModel
     @EnvironmentObject private var auth: AuthManager
 
+    @State private var selectedOpenEndedChips: Set<String> = []
+
     private var hasChipSelection: Bool {
         viewModel.selectedChips.values.contains { !$0.isEmpty }
     }
@@ -41,22 +43,9 @@ struct ReflectionView: View {
                     )
                 }
 
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Anything else to add")
-                        .font(.system(size: 9))
-                        .foregroundStyle(Theme.Colors.textMuted)
-                    TextField("", text: $viewModel.openEndedText, axis: .vertical)
-                        .font(.system(size: 13))
-                        .foregroundStyle(Theme.Colors.textPrimary)
-                        .lineLimit(1 ... 3)
-                        .padding(7)
-                        .background(Color(hex: "#0F0F0F"))
-                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .stroke(Color(hex: "#1A1A1A"), lineWidth: 1),
-                        )
-                }
+                openEndedCoachSection
+
+                tomorrowIntentionSection
 
                 BaselineButton(title: "Plan tomorrow →") {
                     viewModel.submitReflectionAndShowResult(auth: auth)
@@ -66,6 +55,99 @@ struct ReflectionView: View {
             .padding(.vertical, 12)
         }
         .background(Theme.Colors.background)
+    }
+
+    private var openEndedCoachSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("What else should the coach know?")
+                .font(.system(size: 12, weight: .regular, design: .serif))
+                .foregroundStyle(Theme.Colors.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(
+                columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)],
+                alignment: .leading,
+                spacing: 8,
+            ) {
+                ForEach(viewModel.suggestedOpenEndedChips, id: \.self) { chip in
+                    openEndedSuggestedChipButton(chip)
+                }
+            }
+
+            TextField(
+                "",
+                text: $viewModel.openEndedText,
+                prompt: Text("Add more detail...")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.Colors.textMuted),
+                axis: .vertical,
+            )
+            .font(.system(size: 13))
+            .foregroundStyle(Theme.Colors.textPrimary)
+            .lineLimit(1 ... 3)
+            .padding(7)
+            .background(Color(hex: "#0F0F0F"))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color(hex: "#1A1A1A"), lineWidth: 1),
+            )
+        }
+    }
+
+    private var tomorrowIntentionSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("What's your intention for tomorrow?")
+                .font(.system(size: 12, weight: .regular, design: .serif))
+                .foregroundStyle(Theme.Colors.textPrimary)
+                .fixedSize(horizontal: false, vertical: true)
+            Text("You'll set tomorrow's goals in the next step.")
+                .font(.system(size: 9))
+                .foregroundStyle(Theme.Colors.textMuted)
+            TextField(
+                "",
+                text: $viewModel.tomorrowIntention,
+                prompt: Text("One line that sets the tone...")
+                    .font(.system(size: 13))
+                    .foregroundStyle(Theme.Colors.textMuted),
+                axis: .vertical,
+            )
+            .font(.system(size: 13))
+            .foregroundStyle(Theme.Colors.textPrimary)
+            .lineLimit(1 ... 3)
+            .padding(7)
+            .background(Color(hex: "#0F0F0F"))
+            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color(hex: "#1A1A1A"), lineWidth: 1),
+            )
+        }
+    }
+
+    private func openEndedSuggestedChipButton(_ chip: String) -> some View {
+        let isOn = selectedOpenEndedChips.contains(chip)
+        return Button {
+            if !selectedOpenEndedChips.contains(chip) {
+                viewModel.appendToOpenEnded(text: chip)
+                selectedOpenEndedChips.insert(chip)
+            }
+        } label: {
+            Text(chip)
+                .font(.system(size: 9))
+                .foregroundStyle(isOn ? Color.white : Theme.Colors.textPrimary)
+                .multilineTextAlignment(.center)
+                .padding(.vertical, 4)
+                .padding(.horizontal, 9)
+                .frame(maxWidth: .infinity, alignment: .center)
+                .background(isOn ? Color(hex: "#1A1228") : Color(hex: "#0F0F0F"))
+                .clipShape(Capsule())
+                .overlay(
+                    Capsule()
+                        .stroke(isOn ? Theme.Colors.accent : Color(hex: "#252525"), lineWidth: 1),
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private func questionBlock(_ question: ReflectionQuestion) -> some View {

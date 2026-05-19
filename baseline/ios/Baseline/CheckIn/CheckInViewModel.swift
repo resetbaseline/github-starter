@@ -70,6 +70,8 @@ final class CheckInViewModel: ObservableObject {
         UUID(uuidString: String(format: "10000000-0000-4000-8000-%012x", i))!
     }
 
+    private static let doomscrollQuestionID = UUID(uuidString: "A1000000-0000-4000-8000-000000000001")!
+
     init() {
         loadInitialDraft()
     }
@@ -86,13 +88,45 @@ final class CheckInViewModel: ObservableObject {
         return "Decide on one non-negotiable before the day starts."
     }
 
+    /// Quick-add phrases for the open-ended coach note, driven by reflection chip selections.
+    var suggestedOpenEndedChips: [String] {
+        let selected = Set(selectedChips.values.flatMap { $0 })
+        let doomscrollSelected = selectedChips[Self.doomscrollQuestionID, default: []]
+        if selected.contains("Low energy") {
+            return ["Energy crashed after lunch", "Didn't sleep well", "Needed more breaks"]
+        }
+        if doomscrollSelected.contains("A little") || doomscrollSelected.contains("Quite a bit") {
+            return ["Phone kept pulling me in", "Lost 30+ minutes to scrolling", "Distraction was the main issue"]
+        }
+        if selected.contains("It took over") {
+            return ["Phone took over most of the afternoon", "Couldn't break the scroll loop", "Gate helped but not enough"]
+        }
+        if selected.contains("Avoidance") {
+            return ["Kept putting off the hard task", "Did easy things instead", "Knew what to do but didn't start"]
+        }
+        if selected.contains("Interruptions") {
+            return ["External interruptions broke my flow", "Couldn't get a clean block", "People pulled me in different directions"]
+        }
+        return ["It was a mixed day", "Hard to pin down one thing", "Nothing specific stood out"]
+    }
+
     /// Counts reflection questions with at least one chip selected.
     var reflectionAnswerCount: Int {
         selectedQuestions.filter { !(selectedChips[$0.id, default: []].isEmpty) }.count
     }
 
     var aiSuggestionText: String {
-        aiSuggestion
+        var result = aiSuggestion
+        let detail = openEndedText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !detail.isEmpty else { return result }
+        let lower = detail.lowercased()
+        if lower.contains("phone") || lower.contains("scroll") {
+            result += " Phone use noted — gate data will have more context for tonight's coach note."
+        }
+        if lower.contains("energy") || lower.contains("tired") {
+            result += " Low energy flagged — coach will factor this into tomorrow's suggestion."
+        }
+        return result
     }
 
     func toggleChip(questionId: UUID, chip: String) {
@@ -110,6 +144,16 @@ final class CheckInViewModel: ObservableObject {
         }
         selectedChips = next
         aiSuggestion = Self.buildCoachObservation(selectedChips: next)
+    }
+
+    func appendToOpenEnded(text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        if openEndedText.isEmpty {
+            openEndedText = trimmed
+        } else {
+            openEndedText += ", \(trimmed)"
+        }
     }
 
     func toggleGoal(id: UUID) {
