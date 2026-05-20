@@ -75,7 +75,7 @@ struct TimersView: View {
 
             presetRow
 
-            customRotatorRow
+            customDialSection
 
             hardLockRow
 
@@ -159,42 +159,31 @@ struct TimersView: View {
         }
     }
 
-    private var customRotatorRow: some View {
-        HStack {
-            Text("Custom")
-                .font(.system(size: 10))
-                .foregroundStyle(Color(hex: "#555555"))
-            Spacer(minLength: 0)
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                viewModel.adjustCustom(-5)
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Theme.Colors.accent)
+    private var customDialSection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("Custom duration")
+                    .font(.system(size: 10))
+                    .foregroundStyle(Color(hex: "#555555"))
+                Spacer(minLength: 0)
+                if viewModel.selectedDuration == viewModel.customMinutes {
+                    Text("selected")
+                        .font(.system(size: 9))
+                        .foregroundStyle(Theme.Colors.accent)
+                }
             }
-            .buttonStyle(.plain)
-            .disabled(viewModel.timerState == .running || viewModel.timerState == .completed)
 
-            Text("\(viewModel.customMinutes) min")
-                .font(.system(size: 12, weight: .light))
-                .foregroundStyle(Theme.Colors.textPrimary)
-                .frame(minWidth: 52)
-                .multilineTextAlignment(.center)
-
-            Button {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                viewModel.adjustCustom(5)
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Theme.Colors.accent)
+            DialTimerPicker(
+                minutes: $viewModel.customMinutes,
+                disabled: viewModel.timerState == .running || viewModel.timerState == .completed,
+                onSelect: { viewModel.selectCustom() },
+            )
+            .frame(maxWidth: .infinity)
+            .onChange(of: viewModel.customMinutes) { _, _ in
+                viewModel.adjustCustom(0)
             }
-            .buttonStyle(.plain)
-            .disabled(viewModel.timerState == .running || viewModel.timerState == .completed)
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 14)
+        .padding(14)
         .background(Color(hex: "#111111"))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
@@ -366,5 +355,129 @@ struct TimersView: View {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .stroke(Color(hex: "#1E1E1E"), lineWidth: 1),
         )
+    }
+}
+
+// MARK: - Dial picker
+
+private struct DialTimerPicker: View {
+    @Binding var minutes: Int
+    let range: ClosedRange<Int> = 1 ... 180
+    let disabled: Bool
+    var onSelect: () -> Void = {}
+
+    @State private var isDragging = false
+
+    private let diameter: CGFloat = 160
+    private let radius: CGFloat = 72
+
+    private var progressFraction: Double {
+        Double(minutes - range.lowerBound) / Double(range.upperBound - range.lowerBound)
+    }
+
+    private var handleAngle: Double {
+        progressFraction * 2 * .pi - .pi / 2
+    }
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .stroke(Color(hex: "#1A1A1A"), lineWidth: 1.5)
+
+            ForEach(0 ..< 12, id: \.self) { index in
+                tickMark(at: index)
+            }
+
+            Circle()
+                .trim(from: 0, to: progressFraction)
+                .stroke(
+                    Theme.Colors.accent,
+                    style: StrokeStyle(lineWidth: 3, lineCap: .round),
+                )
+                .rotationEffect(.degrees(-90))
+
+            Circle()
+                .fill(Theme.Colors.accent)
+                .frame(width: 14, height: 14)
+                .scaleEffect(isDragging ? 1.2 : 1)
+                .animation(.spring(response: 0.2), value: isDragging)
+                .offset(
+                    x: CGFloat(cos(handleAngle)) * radius,
+                    y: CGFloat(sin(handleAngle)) * radius,
+                )
+
+            VStack(spacing: 2) {
+                Text("\(minutes)")
+                    .font(.system(size: 32, weight: .ultraLight, design: .monospaced))
+                    .foregroundStyle(Theme.Colors.textPrimary)
+                Text("min")
+                    .font(.system(size: 9))
+                    .foregroundStyle(Color(hex: "#555555"))
+                    .tracking(1.2)
+                    .textCase(.uppercase)
+            }
+        }
+        .frame(width: diameter, height: diameter)
+        .opacity(disabled ? 0.5 : 1)
+        .contentShape(Circle())
+        .gesture(dragGesture)
+        .onTapGesture {
+            if !disabled {
+                onSelect()
+            }
+        }
+        .allowsHitTesting(!disabled)
+    }
+
+    private var dragGesture: some Gesture {
+        DragGesture(minimumDistance: 0)
+            .onChanged { value in
+                guard !disabled else { return }
+                isDragging = true
+                let center = CGPoint(x: diameter / 2, y: diameter / 2)
+                let dx = value.location.x - center.x
+                let dy = value.location.y - center.y
+                let angle = atan2(dy, dx)
+                var normalized = angle + .pi / 2
+                if normalized < 0 {
+                    normalized += 2 * .pi
+                }
+                var newMinutes = Int(normalized / (2 * .pi) * Double(range.upperBound)) + 1
+                newMinutes = min(range.upperBound, max(range.lowerBound, newMinutes))
+
+                if newMinutes != minutes {
+                    let stepDelta = abs(newMinutes - minutes)
+                    for _ in 0 ..< stepDelta {
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                    minutes = newMinutes
+                }
+            }
+            .onEnded { _ in
+                isDragging = false
+            }
+    }
+
+    private func tickMark(at index: Int) -> some View {
+        let degrees = Double(index) * 30 - 90
+        let radians = degrees * .pi / 180
+        let innerRadius = radius - 6
+        let center = diameter / 2
+
+        return Path { path in
+            path.move(
+                to: CGPoint(
+                    x: center + CGFloat(cos(radians)) * innerRadius,
+                    y: center + CGFloat(sin(radians)) * innerRadius,
+                ),
+            )
+            path.addLine(
+                to: CGPoint(
+                    x: center + CGFloat(cos(radians)) * radius,
+                    y: center + CGFloat(sin(radians)) * radius,
+                ),
+            )
+        }
+        .stroke(Color(hex: "#2A2A2A"), lineWidth: 1)
     }
 }

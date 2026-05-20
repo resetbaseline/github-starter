@@ -48,6 +48,10 @@ final class TimersViewModel: ObservableObject {
 
     let presetDurations: [Int] = [5, 25, 60]
 
+    var isCustomActive: Bool {
+        !presetDurations.contains(selectedDuration)
+    }
+
     private var countdownTimer: Timer?
 
     init() {
@@ -65,7 +69,21 @@ final class TimersViewModel: ObservableObject {
         }
     }
 
+    func selectCustom() {
+        selectedDuration = customMinutes
+        if timerState == .idle {
+            syncDurationSeconds()
+        }
+    }
+
     func adjustCustom(_ delta: Int) {
+        if delta == 0 {
+            selectedDuration = customMinutes
+            if timerState == .idle {
+                syncDurationSeconds()
+            }
+            return
+        }
         customMinutes = min(180, max(1, customMinutes + delta))
         selectedDuration = customMinutes
         if timerState == .idle {
