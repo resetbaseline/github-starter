@@ -10,7 +10,6 @@ final class ProfileViewModel: ObservableObject {
     @Published var totalGoalsCompleted: Int = 47
     @Published var totalCheckIns: Int = 14
     @Published var memberSince: Date = Calendar.current.date(byAdding: .day, value: -14, to: Date()) ?? Date()
-    @Published var showResetConfirm: Bool = false
 
     var memberSinceFormatted: String {
         "Member since \(Self.memberSinceFormatter.string(from: memberSince))"
