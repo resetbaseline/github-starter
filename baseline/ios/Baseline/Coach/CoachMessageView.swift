@@ -17,15 +17,13 @@ struct CoachMessageView: View {
     }
 
     private var sessionTypeSelector: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(viewModel.sessionTypes) { type in
-                    sessionTypeChip(type)
-                }
+        HStack(spacing: 5) {
+            ForEach(viewModel.sessionTypes) { type in
+                sessionTypeChip(type)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
         }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
     }
 
     private func sessionTypeChip(_ type: CoachSessionType) -> some View {
@@ -34,10 +32,10 @@ struct CoachMessageView: View {
             viewModel.selectSessionType(type)
         } label: {
             Text(type.displayName)
-                .font(.system(size: 10))
+                .font(.system(size: 9))
                 .foregroundStyle(isActive ? Color(hex: "#9B7FD4") : Color(hex: "#555555"))
-                .padding(.vertical, 5)
-                .padding(.horizontal, 10)
+                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity)
                 .background(isActive ? Color(hex: "#1A1228") : Color(hex: "#0F0F0F"))
                 .clipShape(Capsule())
                 .overlay(
@@ -140,6 +138,74 @@ struct CoachMessageView: View {
     }
 }
 
+// MARK: - Peak icon
+
+private struct CoachPeakIcon: View {
+    var size: CGFloat = 20
+
+    var body: some View {
+        Canvas { context, canvasSize in
+            let w = canvasSize.width
+            let h = canvasSize.height
+            let cx = w / 2
+            let tipY = h * 0.12
+            let baseY = h * 0.78
+
+            let outerCircle = Path(ellipseIn: CGRect(x: 0, y: 0, width: w, height: h))
+            context.fill(outerCircle, with: .color(Color(hex: "#0A0614")))
+            context.stroke(outerCircle, with: .color(Color(hex: "#2D1F4A")), lineWidth: 0.8)
+
+            var ridge = Path()
+            ridge.move(to: CGPoint(x: w * 0.08, y: baseY + h * 0.08))
+            ridge.addLine(to: CGPoint(x: w * 0.30, y: h * 0.42))
+            ridge.addLine(to: CGPoint(x: cx, y: h * 0.56))
+            ridge.addLine(to: CGPoint(x: w * 0.70, y: h * 0.34))
+            ridge.addLine(to: CGPoint(x: w * 0.92, y: baseY + h * 0.08))
+            ridge.closeSubpath()
+            context.fill(ridge, with: .color(Color(hex: "#130828")))
+
+            var leftFace = Path()
+            leftFace.move(to: CGPoint(x: cx, y: tipY))
+            leftFace.addLine(to: CGPoint(x: w * 0.18, y: baseY))
+            leftFace.addLine(to: CGPoint(x: cx, y: baseY))
+            leftFace.closeSubpath()
+            context.fill(leftFace, with: .color(Color(hex: "#251545")))
+
+            var rightFace = Path()
+            rightFace.move(to: CGPoint(x: cx, y: tipY))
+            rightFace.addLine(to: CGPoint(x: w * 0.82, y: baseY))
+            rightFace.addLine(to: CGPoint(x: cx, y: baseY))
+            rightFace.closeSubpath()
+            context.fill(rightFace, with: .color(Color(hex: "#1A0F35")))
+
+            var leftRidge = Path()
+            leftRidge.move(to: CGPoint(x: cx, y: tipY))
+            leftRidge.addLine(to: CGPoint(x: w * 0.18, y: baseY))
+            context.stroke(leftRidge, with: .color(Color(hex: "#5A3A90")), lineWidth: 0.8)
+
+            var rightRidge = Path()
+            rightRidge.move(to: CGPoint(x: cx, y: tipY))
+            rightRidge.addLine(to: CGPoint(x: w * 0.82, y: baseY))
+            context.stroke(rightRidge, with: .color(Color(hex: "#3D2068")), lineWidth: 0.6)
+
+            var snow = Path()
+            snow.move(to: CGPoint(x: cx, y: tipY))
+            snow.addLine(to: CGPoint(x: cx - w * 0.09, y: tipY + h * 0.18))
+            snow.addLine(to: CGPoint(x: cx, y: tipY + h * 0.14))
+            snow.addLine(to: CGPoint(x: cx + w * 0.09, y: tipY + h * 0.18))
+            snow.closeSubpath()
+            context.fill(snow, with: .color(Color(hex: "#D4C8F0").opacity(0.9)))
+
+            let tipDot = Path(ellipseIn: CGRect(x: cx - 1.2, y: tipY - 1.2, width: 2.4, height: 2.4))
+            context.fill(tipDot, with: .color(.white))
+
+            let ring = Path(ellipseIn: CGRect(x: 1, y: 1, width: w - 2, height: h - 2))
+            context.stroke(ring, with: .color(Color(hex: "#7C5CBF").opacity(0.3)), lineWidth: 0.5)
+        }
+        .frame(width: size, height: size)
+    }
+}
+
 // MARK: - Bubbles
 
 private struct CoachBubble: View {
@@ -151,10 +217,8 @@ private struct CoachBubble: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            Circle()
-                .fill(Theme.Colors.accent)
-                .frame(width: 6, height: 6)
-                .padding(.top, 6)
+            CoachPeakIcon(size: 20)
+                .padding(.top, 2)
 
             VStack(alignment: .leading, spacing: 3) {
                 Text("COACH")
@@ -247,10 +311,8 @@ private struct TypingIndicator: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
-            Circle()
-                .fill(Theme.Colors.accent)
-                .frame(width: 6, height: 6)
-                .padding(.top, 6)
+            CoachPeakIcon(size: 20)
+                .padding(.top, 2)
 
             HStack(spacing: 4) {
                 ForEach(0 ..< 3, id: \.self) { index in
