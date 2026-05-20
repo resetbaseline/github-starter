@@ -2,6 +2,7 @@ import SwiftUI
 
 /// Authenticated shell: primary navigation is the tab bar (Home, Focus, Coach, Profile).
 struct MainTabView: View {
+    @StateObject private var gateViewModel = GateViewModel()
     @State private var selection: AppTab = .home
 
     var body: some View {
@@ -27,6 +28,11 @@ struct MainTabView: View {
         .toolbarBackground(.visible, for: .tabBar)
         .toolbarColorScheme(.dark, for: .tabBar)
         .background(Theme.Colors.background)
+        .environmentObject(gateViewModel)
+        .fullScreenCover(isPresented: $gateViewModel.isPresented) {
+            GateView()
+                .environmentObject(gateViewModel)
+        }
     }
 }
 

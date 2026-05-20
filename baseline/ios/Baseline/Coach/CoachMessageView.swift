@@ -140,7 +140,7 @@ struct CoachMessageView: View {
 
 // MARK: - Peak icon
 
-private struct CoachPeakIcon: View {
+struct CoachPeakIcon: View {
     var size: CGFloat = 20
 
     var body: some View {
