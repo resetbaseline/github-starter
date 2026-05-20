@@ -5,6 +5,8 @@ struct ProfileView: View {
     @EnvironmentObject private var auth: AuthManager
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showGoalsSheet = false
+    @State private var showFutureSelf = false
+    @AppStorage("baseline.futureSelfMessage") private var futureSelfMessageStored: String = ""
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -42,6 +44,10 @@ struct ProfileView: View {
         .sheet(isPresented: $showGoalsSheet) {
             LongTermGoalsSheetView()
                 .environmentObject(auth)
+                .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: $showFutureSelf) {
+            FutureSelfView()
                 .presentationDragIndicator(.hidden)
         }
     }
@@ -215,6 +221,8 @@ struct ProfileView: View {
 
     private var settingsSection: some View {
         VStack(spacing: 0) {
+            futureSelfSettingsRow
+
             settingRow(
                 label: "Wake time",
                 value: formattedWakeTime,
@@ -242,6 +250,42 @@ struct ProfileView: View {
                 .stroke(Color(hex: "#161616"), lineWidth: 1),
         )
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private var futureSelfStoredNonEmpty: Bool {
+        !futureSelfMessageStored.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    private var futureSelfSettingsRow: some View {
+        Button {
+            showFutureSelf = true
+        } label: {
+            HStack(spacing: 8) {
+                Text("Message to Future Self")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.Colors.textPrimary)
+                Spacer(minLength: 0)
+                if futureSelfStoredNonEmpty {
+                    Text("Written")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Theme.Colors.accent)
+                } else {
+                    Text("Not written")
+                        .font(.system(size: 10))
+                        .foregroundStyle(Color(hex: "#333333"))
+                }
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.textMuted)
+            }
+            .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color(hex: "#0F0F0F"))
+                    .frame(height: 0.5)
+            }
+        }
+        .buttonStyle(.plain)
     }
 
     private var accountSection: some View {
