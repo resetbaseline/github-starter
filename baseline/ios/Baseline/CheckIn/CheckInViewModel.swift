@@ -10,6 +10,30 @@ struct CheckInGoalRow: Identifiable, Equatable {
     var completed: Bool
 }
 
+struct LongTermGoalDraft: Identifiable, Equatable {
+    var id: UUID = UUID()
+    var text: String = ""
+    var category: String = "Work"
+    var targetDate: Date? = nil
+    var currentBaseline: String = ""
+    var showTargetDate: Bool = false
+    var showBaseline: Bool = false
+
+    /// Values to persist (drops UI-only flags and empty optional fields).
+    func forPersistence() -> LongTermGoalDraft {
+        var copy = self
+        if !showTargetDate {
+            copy.targetDate = nil
+        }
+        if !showBaseline {
+            copy.currentBaseline = ""
+        }
+        copy.showTargetDate = false
+        copy.showBaseline = false
+        return copy
+    }
+}
+
 struct TomorrowGoalDraft: Identifiable, Equatable {
     let id: UUID
     var text: String
@@ -288,15 +312,19 @@ final class CheckInViewModel: ObservableObject {
             )
         }
 
-        tomorrowOtherGoals = auth.longTermGoals.map { lt in
+        tomorrowOtherGoals = auth.longTermGoalDrafts.map { lt in
             TomorrowGoalDraft(
                 id: UUID(),
-                text: Self.dailyActionLine(longTermText: lt.text, category: lt.category),
+                text: Self.dailyActionLine(longTermGoal: lt),
                 category: lt.category,
                 isAccepted: false,
                 isSuggested: true,
             )
         }
+    }
+
+    private static func dailyActionLine(longTermGoal: LongTermGoalDraft) -> String {
+        dailyActionLine(longTermText: longTermGoal.text, category: longTermGoal.category)
     }
 
     private static func dailyActionLine(longTermText: String, category: String) -> String {

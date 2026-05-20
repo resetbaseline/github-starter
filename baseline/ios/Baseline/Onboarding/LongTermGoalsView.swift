@@ -1,19 +1,13 @@
 import SwiftUI
 
-private struct GoalEntry: Identifiable {
-    let id: UUID
-    var text: String
-    var category: String
-}
-
 struct LongTermGoalsView: View {
     @EnvironmentObject private var onboarding: OnboardingViewModel
 
     private static let categories = ["Work", "Health", "Learning", "Creative", "Finance", "Personal"]
 
-    @State private var goals: [GoalEntry] = [GoalEntry(id: UUID(), text: "", category: "Work")]
+    @State private var goals: [LongTermGoalDraft] = [LongTermGoalDraft()]
 
-    private var nonEmptyGoals: [GoalEntry] {
+    private var nonEmptyGoals: [LongTermGoalDraft] {
         goals.filter { !$0.text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }
     }
 
@@ -57,7 +51,7 @@ struct LongTermGoalsView: View {
 
                     if goals.count < 3 {
                         Button {
-                            goals.append(GoalEntry(id: UUID(), text: "", category: "Work"))
+                            goals.append(LongTermGoalDraft())
                         } label: {
                             Text("Add another goal")
                                 .font(.system(size: 11))
@@ -76,8 +70,7 @@ struct LongTermGoalsView: View {
                     Spacer(minLength: 32)
 
                     BaselineButton(title: "Continue →") {
-                        let pairs = nonEmptyGoals.map { (text: $0.text, category: $0.category) }
-                        onboarding.saveLongTermGoals(pairs)
+                        onboarding.saveLongTermGoals(nonEmptyGoals.map { $0.forPersistence() })
                         onboarding.goNext()
                     }
                     .opacity(canContinue ? 1 : 0.4)
@@ -101,7 +94,10 @@ struct LongTermGoalsView: View {
     }
 
     private func goalRow(index: Int) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let goalText = goals[index].text.trimmingCharacters(in: .whitespacesAndNewlines)
+        let showOptionalFields = goalText.count >= 3
+
+        return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
                 TextField(
                     "e.g. Launch my app by September",
@@ -144,7 +140,95 @@ struct LongTermGoalsView: View {
                     }
                 }
             }
+
+            if showOptionalFields {
+                optionalFields(index: index)
+            }
         }
+    }
+
+    @ViewBuilder
+    private func optionalFields(index: Int) -> some View {
+        if goals[index].showTargetDate {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("By when? (optional)")
+                    .font(.system(size: 9))
+                    .foregroundStyle(Theme.Colors.textMuted)
+                DatePicker(
+                    "",
+                    selection: Binding(
+                        get: { goals[index].targetDate ?? Self.defaultTargetDate },
+                        set: { newValue in
+                            var next = goals
+                            next[index].targetDate = newValue
+                            goals = next
+                        },
+                    ),
+                    displayedComponents: .date,
+                )
+                .datePickerStyle(.compact)
+                .labelsHidden()
+                .tint(Theme.Colors.accent)
+            }
+        } else {
+            optionalAddChip(title: "Add target date +") {
+                var next = goals
+                next[index].showTargetDate = true
+                if next[index].targetDate == nil {
+                    next[index].targetDate = Self.defaultTargetDate
+                }
+                goals = next
+            }
+        }
+
+        if goals[index].showBaseline {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Current baseline (optional)")
+                    .font(.system(size: 9))
+                    .foregroundStyle(Theme.Colors.textMuted)
+                TextField(
+                    "e.g. I currently bench 145lbs",
+                    text: Binding(
+                        get: { goals[index].currentBaseline },
+                        set: { newValue in
+                            var next = goals
+                            next[index].currentBaseline = newValue
+                            goals = next
+                        },
+                    ),
+                )
+                .font(.system(size: 13))
+                .foregroundStyle(Theme.Colors.textPrimary)
+                .padding(10)
+                .background(Color(hex: "#0F0F0F"))
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(Color(hex: "#1E1E1E"), lineWidth: 1),
+                )
+            }
+        } else {
+            optionalAddChip(title: "Add baseline +") {
+                var next = goals
+                next[index].showBaseline = true
+                goals = next
+            }
+        }
+    }
+
+    private func optionalAddChip(title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(.system(size: 10))
+                .foregroundStyle(Theme.Colors.textMuted)
+                .padding(.vertical, 5)
+                .padding(.horizontal, 10)
+                .background(
+                    Capsule()
+                        .strokeBorder(style: StrokeStyle(lineWidth: 1, dash: [4, 3])),
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     private func chipButton(index: Int, category: String, selected: Bool) -> some View {
@@ -166,6 +250,10 @@ struct LongTermGoalsView: View {
                 )
         }
         .buttonStyle(.plain)
+    }
+
+    private static var defaultTargetDate: Date {
+        Calendar.current.date(byAdding: .month, value: 3, to: Date()) ?? Date()
     }
 }
 

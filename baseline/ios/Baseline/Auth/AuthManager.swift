@@ -27,16 +27,38 @@ final class AuthManager: ObservableObject {
     private struct StoredLongTermGoal: Codable {
         let text: String
         let category: String
+        let targetDate: TimeInterval?
+        let currentBaseline: String?
+
+        init(from draft: LongTermGoalDraft) {
+            text = draft.text
+            category = draft.category
+            targetDate = draft.targetDate?.timeIntervalSince1970
+            let baseline = draft.currentBaseline.trimmingCharacters(in: .whitespacesAndNewlines)
+            currentBaseline = baseline.isEmpty ? nil : baseline
+        }
     }
 
     /// Long-term goals from onboarding (JSON in `UserDefaults` / `AppStorage`).
-    var longTermGoals: [(text: String, category: String)] {
+    var longTermGoalDrafts: [LongTermGoalDraft] {
         guard let data = longTermGoalsJSON.data(using: .utf8),
               let rows = try? JSONDecoder().decode([StoredLongTermGoal].self, from: data)
         else {
             return []
         }
-        return rows.map { (text: $0.text, category: $0.category) }
+        return rows.map { row in
+            LongTermGoalDraft(
+                text: row.text,
+                category: row.category,
+                targetDate: row.targetDate.map { Date(timeIntervalSince1970: $0) },
+                currentBaseline: row.currentBaseline ?? "",
+            )
+        }
+    }
+
+    /// Text and category pairs for callers that still use the legacy tuple shape.
+    var longTermGoals: [(text: String, category: String)] {
+        longTermGoalDrafts.map { (text: $0.text, category: $0.category) }
     }
 
     init() {
@@ -55,19 +77,23 @@ final class AuthManager: ObservableObject {
         wakeTime: Date = Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date(),
         checkInTime: Date =
             Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: Date()) ?? Date(),
-        longTermGoals: [(text: String, category: String)] = [],
+        longTermGoals: [LongTermGoalDraft] = [],
     ) {
         onboardingPreferredName = preferredName
         UserDefaults.standard.set(wakeTime.timeIntervalSince1970, forKey: StorageKey.wakeTime)
         UserDefaults.standard.set(checkInTime.timeIntervalSince1970, forKey: StorageKey.checkInTime)
 
-        let rows = longTermGoals.map { StoredLongTermGoal(text: $0.text, category: $0.category) }
+        persistLongTermGoals(longTermGoals)
+
+        state = .authenticated
+    }
+
+    func persistLongTermGoals(_ goals: [LongTermGoalDraft]) {
+        let rows = goals.map { StoredLongTermGoal(from: $0) }
         if let data = try? JSONEncoder().encode(rows), let json = String(data: data, encoding: .utf8) {
             longTermGoalsJSON = json
         } else {
             longTermGoalsJSON = "[]"
         }
-
-        state = .authenticated
     }
 }

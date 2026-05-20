@@ -124,7 +124,7 @@ struct OnboardingSetupView: View {
             preferredName: trimmedName,
             wakeTime: wakeTime,
             checkInTime: checkInTime,
-            longTermGoals: onboarding.longTermGoals,
+            longTermGoals: onboarding.longTermGoalDrafts,
         )
     }
 }

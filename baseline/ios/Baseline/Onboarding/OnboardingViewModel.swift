@@ -9,7 +9,11 @@ final class OnboardingViewModel: ObservableObject {
     @Published var step: Int = 0
 
     /// Draft long-term goals (saved to `AuthManager` on final onboarding completion).
-    @Published var longTermGoals: [(text: String, category: String)] = []
+    @Published var longTermGoalDrafts: [LongTermGoalDraft] = []
+
+    var longTermGoals: [(text: String, category: String)] {
+        longTermGoalDrafts.map { (text: $0.text, category: $0.category) }
+    }
 
     var isFirstStep: Bool { step == 0 }
     var isSetupStep: Bool { step == Self.totalSteps - 1 }
@@ -30,8 +34,8 @@ final class OnboardingViewModel: ObservableObject {
         Theme.Haptics.lightImpact()
     }
 
-    func saveLongTermGoals(_ goals: [(text: String, category: String)]) {
-        longTermGoals = goals
+    func saveLongTermGoals(_ goals: [LongTermGoalDraft]) {
+        longTermGoalDrafts = goals
     }
 
     /// Label for a fixed page index (0-based), for views outside the view model instance.
