@@ -16,6 +16,7 @@ struct LongTermGoalDraft: Identifiable, Equatable {
     var category: String = "Work"
     var targetDate: Date? = nil
     var currentBaseline: String = ""
+    var symbolName: String = ""
     var showTargetDate: Bool = false
     var showBaseline: Bool = false
 
@@ -31,6 +32,36 @@ struct LongTermGoalDraft: Identifiable, Equatable {
         copy.showTargetDate = false
         copy.showBaseline = false
         return copy
+    }
+}
+
+enum GoalIconHelpers {
+    static func icon(for goal: LongTermGoalDraft) -> String {
+        if !goal.symbolName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return goal.symbolName
+        }
+        return categorySymbol(for: goal.category)
+    }
+
+    static func categorySymbol(for category: String) -> String {
+        switch category {
+        case "Work", "Business", "Career":
+            return "briefcase.fill"
+        case "Health", "Fitness", "Sport":
+            return "figure.run"
+        case "Creative", "Art", "Music":
+            return "music.note"
+        case "Learning", "Education":
+            return "book.fill"
+        case "Finance", "Money":
+            return "dollarsign.circle.fill"
+        case "Relationships", "Social", "Personal":
+            return "heart.fill"
+        case "Mindfulness", "Mental":
+            return "brain.head.profile"
+        default:
+            return "star.fill"
+        }
     }
 }
 

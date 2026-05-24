@@ -29,6 +29,7 @@ final class AuthManager: ObservableObject {
         let category: String
         let targetDate: TimeInterval?
         let currentBaseline: String?
+        let symbolName: String?
 
         init(from draft: LongTermGoalDraft) {
             text = draft.text
@@ -36,6 +37,8 @@ final class AuthManager: ObservableObject {
             targetDate = draft.targetDate?.timeIntervalSince1970
             let baseline = draft.currentBaseline.trimmingCharacters(in: .whitespacesAndNewlines)
             currentBaseline = baseline.isEmpty ? nil : baseline
+            let symbol = draft.symbolName.trimmingCharacters(in: .whitespacesAndNewlines)
+            symbolName = symbol.isEmpty ? nil : symbol
         }
     }
 
@@ -52,6 +55,7 @@ final class AuthManager: ObservableObject {
                 category: row.category,
                 targetDate: row.targetDate.map { Date(timeIntervalSince1970: $0) },
                 currentBaseline: row.currentBaseline ?? "",
+                symbolName: row.symbolName ?? "",
             )
         }
     }

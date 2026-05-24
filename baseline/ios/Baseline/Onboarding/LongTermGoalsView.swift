@@ -2,6 +2,7 @@ import SwiftUI
 
 struct LongTermGoalsView: View {
     @EnvironmentObject private var onboarding: OnboardingViewModel
+    @EnvironmentObject private var auth: AuthManager
 
     private static let categories = ["Work", "Health", "Learning", "Creative", "Finance", "Personal"]
 
@@ -70,7 +71,7 @@ struct LongTermGoalsView: View {
                     Spacer(minLength: 32)
 
                     BaselineButton(title: "Continue →") {
-                        onboarding.saveLongTermGoals(nonEmptyGoals.map { $0.forPersistence() })
+                        onboarding.saveLongTermGoals(nonEmptyGoals.map { $0.forPersistence() }, auth: auth)
                         onboarding.goNext()
                     }
                     .opacity(canContinue ? 1 : 0.4)
@@ -99,6 +100,19 @@ struct LongTermGoalsView: View {
 
         return VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 8) {
+                ZStack {
+                    Circle()
+                        .fill(Color(hex: "#1A1228"))
+                        .frame(width: 36, height: 36)
+                        .overlay(
+                            Circle()
+                                .stroke(Color(hex: "#2D1F4A"), lineWidth: 1),
+                        )
+                    Image(systemName: GoalIconHelpers.icon(for: goals[index]))
+                        .font(.system(size: 14))
+                        .foregroundStyle(Theme.Colors.accent)
+                }
+
                 TextField(
                     "e.g. Launch my app by September",
                     text: Binding(

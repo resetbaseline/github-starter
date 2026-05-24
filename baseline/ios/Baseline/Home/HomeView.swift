@@ -2,7 +2,6 @@ import SwiftUI
 
 struct HomeView: View {
     @EnvironmentObject private var auth: AuthManager
-    @EnvironmentObject private var gateViewModel: GateViewModel
     @StateObject private var viewModel = HomeViewModel()
     @State private var showCoachAssist = false
 
@@ -24,15 +23,6 @@ struct HomeView: View {
                         OtherGoalsSection()
                         focusSessionCard
                         checkInCard
-
-                        Button("Test Gate") {
-                            gateViewModel.isPresented = true
-                        }
-                        .font(.system(size: 9))
-                        .foregroundStyle(Theme.Colors.textMuted)
-                        .buttonStyle(.plain)
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, 12)
                     }
                     .padding(.horizontal, 18)
                     .padding(.bottom, Theme.Spacing.lg)
