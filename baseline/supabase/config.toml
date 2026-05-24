@@ -396,6 +396,9 @@ verify_jwt = true
 [functions.send-push-notification]
 verify_jwt = true
 
+[functions.send-support-email]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
