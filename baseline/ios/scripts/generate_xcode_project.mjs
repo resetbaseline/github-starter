@@ -48,6 +48,8 @@ const swiftFiles = [
   "Baseline/Gate/GateViewModel.swift",
   "Baseline/FutureSelf/FutureSelfView.swift",
   "Baseline/FutureSelf/FutureSelfViewModel.swift",
+  "Baseline/Support/SupportView.swift",
+  "Baseline/Support/SupportViewModel.swift",
   "Baseline/MessageToSelf/MessageToSelfView.swift",
   "Baseline/MessageToSelf/MessageToSelfViewModel.swift",
   "Baseline/Shared/APIClient.swift",
@@ -102,6 +104,7 @@ const g = {
   profile: nid(),
   gate: nid(),
   futureSelf: nid(),
+  support: nid(),
   mts: nid(),
   comp: nid(),
   shared: nid(),
@@ -243,6 +246,12 @@ line(
   ]),
 );
 line(
+  grp(g.support, "Support", "Support", [
+    `${fileRef["Baseline/Support/SupportView.swift"]} /* SupportView.swift */`,
+    `${fileRef["Baseline/Support/SupportViewModel.swift"]} /* SupportViewModel.swift */`,
+  ]),
+);
+line(
   grp(g.mts, "MessageToSelf", "MessageToSelf", [
     `${fileRef["Baseline/MessageToSelf/MessageToSelfView.swift"]} /* MessageToSelfView.swift */`,
     `${fileRef["Baseline/MessageToSelf/MessageToSelfViewModel.swift"]} /* MessageToSelfViewModel.swift */`,
@@ -285,6 +294,7 @@ line(
     `${g.profile} /* Profile */`,
     `${g.gate} /* Gate */`,
     `${g.futureSelf} /* FutureSelf */`,
+    `${g.support} /* Support */`,
     `${g.mts} /* MessageToSelf */`,
     `${g.shared} /* Shared */`,
     `${g.models} /* Models */`,

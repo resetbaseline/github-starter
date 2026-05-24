@@ -6,6 +6,9 @@ struct ProfileView: View {
     @StateObject private var viewModel = ProfileViewModel()
     @State private var showGoalsSheet = false
     @State private var showFutureSelf = false
+    @State private var showSettings = false
+    @State private var showSupport = false
+    @State private var supportInitialCategory: SupportCategory?
     @AppStorage("baseline.futureSelfMessage") private var futureSelfMessageStored: String = ""
 
     private static let timeFormatter: DateFormatter = {
@@ -15,8 +18,6 @@ struct ProfileView: View {
         formatter.locale = Locale.autoupdatingCurrent
         return formatter
     }()
-
-    private static let feedbackMailURL = URL(string: "mailto:feedback@resetbaseline.com")!
 
     var body: some View {
         ZStack {
@@ -31,7 +32,6 @@ struct ProfileView: View {
                         identityCard
                         streakCard
                         longTermGoalsSummaryRow
-                        settingsSection
                         accountSection
                         Spacer(minLength: 20)
                     }
@@ -50,17 +50,55 @@ struct ProfileView: View {
             FutureSelfView()
                 .presentationDragIndicator(.hidden)
         }
+        .sheet(isPresented: $showSettings) {
+            SettingsSheetView(
+                futureSelfWritten: futureSelfStoredNonEmpty,
+                formattedWakeTime: formattedWakeTime,
+                formattedCheckInTime: formattedCheckInTime,
+                onFutureSelf: {
+                    showSettings = false
+                    showFutureSelf = true
+                },
+                onContactSupport: {
+                    showSettings = false
+                    supportInitialCategory = nil
+                    showSupport = true
+                },
+                onBetaFeedback: {
+                    showSettings = false
+                    supportInitialCategory = .betaFeedback
+                    showSupport = true
+                },
+            )
+            .presentationDragIndicator(.hidden)
+        }
+        .sheet(isPresented: $showSupport, onDismiss: { supportInitialCategory = nil }) {
+            SupportView(initialCategory: supportInitialCategory)
+                .presentationDragIndicator(.hidden)
+        }
     }
 
     private var header: some View {
-        Text("Profile")
-            .font(.system(size: 17, weight: .light))
-            .foregroundStyle(Theme.Colors.textPrimary)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 16)
-            .padding(.top, 14)
-            .padding(.bottom, 8)
-            .background(Theme.Colors.background)
+        HStack(alignment: .center) {
+            Text("Profile")
+                .font(.system(size: 17, weight: .light))
+                .foregroundStyle(Theme.Colors.textPrimary)
+
+            Spacer(minLength: 0)
+
+            Button {
+                showSettings = true
+            } label: {
+                Image(systemName: "gearshape")
+                    .font(.system(size: 16))
+                    .foregroundStyle(Theme.Colors.textMuted)
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 14)
+        .padding(.bottom, 8)
+        .background(Theme.Colors.background)
     }
 
     private var identityCard: some View {
@@ -219,75 +257,6 @@ struct ProfileView: View {
         return min(1, max(0.08, base + jitter - 0.06))
     }
 
-    private var settingsSection: some View {
-        VStack(spacing: 0) {
-            futureSelfSettingsRow
-
-            settingRow(
-                label: "Wake time",
-                value: formattedWakeTime,
-                valueColor: Color(hex: "#CCCCCC"),
-                showsChevron: false,
-            )
-            settingRow(
-                label: "Check-in time",
-                value: formattedCheckInTime,
-                valueColor: Color(hex: "#CCCCCC"),
-                showsChevron: false,
-            )
-            settingRow(
-                label: "Notifications",
-                value: "On",
-                valueColor: Theme.Colors.accent,
-                showsChevron: true,
-                isLast: true,
-            )
-        }
-        .background(Color(hex: "#0C0C0C"))
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color(hex: "#161616"), lineWidth: 1),
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-    }
-
-    private var futureSelfStoredNonEmpty: Bool {
-        !futureSelfMessageStored.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-    }
-
-    private var futureSelfSettingsRow: some View {
-        Button {
-            showFutureSelf = true
-        } label: {
-            HStack(spacing: 8) {
-                Text("Message to Future Self")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.Colors.textPrimary)
-                Spacer(minLength: 0)
-                if futureSelfStoredNonEmpty {
-                    Text("Written")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Theme.Colors.accent)
-                } else {
-                    Text("Not written")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Color(hex: "#333333"))
-                }
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Theme.Colors.textMuted)
-            }
-            .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(Color(hex: "#0F0F0F"))
-                    .frame(height: 0.5)
-            }
-        }
-        .buttonStyle(.plain)
-    }
-
     private var accountSection: some View {
         VStack(spacing: 0) {
             Text("ACCOUNT")
@@ -303,30 +272,6 @@ struct ProfileView: View {
                         .frame(height: 0.5)
                 }
 
-            Button {
-                UIApplication.shared.open(Self.feedbackMailURL)
-            } label: {
-                HStack {
-                    Text("Send feedback")
-                        .font(.system(size: 12))
-                        .foregroundStyle(Theme.Colors.textPrimary)
-                    Spacer(minLength: 0)
-                    Text("Beta feedback")
-                        .font(.system(size: 10))
-                        .foregroundStyle(Theme.Colors.accent)
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Theme.Colors.textMuted)
-                }
-                .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
-                .overlay(alignment: .bottom) {
-                    Rectangle()
-                        .fill(Color(hex: "#0F0F0F"))
-                        .frame(height: 0.5)
-                }
-            }
-            .buttonStyle(.plain)
-
             HStack {
                 Text("Sign out")
                     .font(.system(size: 12))
@@ -334,22 +279,6 @@ struct ProfileView: View {
                 Spacer(minLength: 0)
                 Text("Coming soon")
                     .font(.system(size: 9))
-                    .foregroundStyle(Color(hex: "#333333"))
-            }
-            .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
-            .overlay(alignment: .bottom) {
-                Rectangle()
-                    .fill(Color(hex: "#0F0F0F"))
-                    .frame(height: 0.5)
-            }
-
-            HStack {
-                Text("App version")
-                    .font(.system(size: 12))
-                    .foregroundStyle(Theme.Colors.textMuted)
-                Spacer(minLength: 0)
-                Text("0.1.0 (beta)")
-                    .font(.system(size: 10))
                     .foregroundStyle(Color(hex: "#333333"))
             }
             .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
@@ -363,37 +292,6 @@ struct ProfileView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
-    private func settingRow(
-        label: String,
-        value: String,
-        valueColor: Color = Theme.Colors.textMuted,
-        showsChevron: Bool,
-        isLast: Bool = false,
-    ) -> some View {
-        HStack {
-            Text(label)
-                .font(.system(size: 12))
-                .foregroundStyle(Theme.Colors.textPrimary)
-            Spacer(minLength: 0)
-            Text(value)
-                .font(.system(size: 12))
-                .foregroundStyle(valueColor)
-            if showsChevron {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(Theme.Colors.textMuted)
-            }
-        }
-        .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
-        .overlay(alignment: .bottom) {
-            if !isLast {
-                Rectangle()
-                    .fill(Color(hex: "#0F0F0F"))
-                    .frame(height: 0.5)
-            }
-        }
-    }
-
     private var displayName: String {
         let trimmed = auth.onboardingPreferredName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         return trimmed.isEmpty ? "You" : trimmed
@@ -403,6 +301,10 @@ struct ProfileView: View {
         let trimmed = auth.onboardingPreferredName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         guard let first = trimmed.first else { return "B" }
         return String(first).uppercased()
+    }
+
+    private var futureSelfStoredNonEmpty: Bool {
+        !futureSelfMessageStored.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var formattedWakeTime: String {
@@ -427,6 +329,150 @@ struct ProfileView: View {
             ) ?? Date()
         }
         return Self.timeFormatter.string(from: date)
+    }
+}
+
+// MARK: - Settings sheet
+
+private struct SettingsSheetView: View {
+    let futureSelfWritten: Bool
+    let formattedWakeTime: String
+    let formattedCheckInTime: String
+    let onFutureSelf: () -> Void
+    let onContactSupport: () -> Void
+    let onBetaFeedback: () -> Void
+
+    var body: some View {
+        VStack(spacing: 0) {
+            RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                .fill(Color(hex: "#2A2A2A"))
+                .frame(width: 28, height: 3)
+                .padding(.top, 10)
+                .padding(.bottom, 14)
+
+            Text("Settings")
+                .font(.system(size: 14, weight: .light))
+                .foregroundStyle(Theme.Colors.textPrimary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 16)
+                .padding(.bottom, 12)
+
+            VStack(spacing: 0) {
+                settingsButtonRow(label: "Message to Future Self", action: onFutureSelf) {
+                    if futureSelfWritten {
+                        Text("Written")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Theme.Colors.accent)
+                    } else {
+                        Text("Not written")
+                            .font(.system(size: 10))
+                            .foregroundStyle(Color(hex: "#333333"))
+                    }
+                }
+
+                settingsValueRow(label: "Wake time", value: formattedWakeTime, valueColor: Color(hex: "#CCCCCC"))
+                settingsValueRow(label: "Check-in time", value: formattedCheckInTime, valueColor: Color(hex: "#CCCCCC"))
+                settingsValueRow(
+                    label: "Notifications",
+                    value: "On",
+                    valueColor: Theme.Colors.accent,
+                    showsChevron: true,
+                    isLastInGroup: true,
+                )
+
+                settingsDivider
+
+                settingsButtonRow(label: "Contact Support", action: onContactSupport)
+                settingsButtonRow(label: "Send beta feedback", action: onBetaFeedback, isLastInGroup: true)
+
+                settingsDivider
+
+                settingsValueRow(
+                    label: "App version",
+                    value: "0.1.0 (beta)",
+                    valueColor: Color(hex: "#333333"),
+                    isLastInGroup: true,
+                )
+            }
+            .background(Color(hex: "#0C0C0C"))
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color(hex: "#161616"), lineWidth: 1),
+            )
+            .padding(.horizontal, 16)
+
+            Spacer(minLength: 0)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Theme.Colors.background)
+    }
+
+    private var settingsDivider: some View {
+        Rectangle()
+            .fill(Color(hex: "#0F0F0F"))
+            .frame(height: 0.5)
+            .padding(.horizontal, 14)
+    }
+
+    private func settingsButtonRow<Trailing: View>(
+        label: String,
+        action: @escaping () -> Void,
+        isLastInGroup: Bool = false,
+        @ViewBuilder trailing: () -> Trailing = { EmptyView() },
+    ) -> some View {
+        Button(action: action) {
+            HStack(spacing: 8) {
+                Text(label)
+                    .font(.system(size: 12))
+                    .foregroundStyle(Theme.Colors.textPrimary)
+                Spacer(minLength: 0)
+                trailing()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.textMuted)
+            }
+            .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
+            .overlay(alignment: .bottom) {
+                if !isLastInGroup {
+                    Rectangle()
+                        .fill(Color(hex: "#0F0F0F"))
+                        .frame(height: 0.5)
+                }
+            }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func settingsValueRow(
+        label: String,
+        value: String,
+        valueColor: Color,
+        showsChevron: Bool = false,
+        isLastInGroup: Bool = false,
+    ) -> some View {
+        HStack(spacing: 8) {
+            Text(label)
+                .font(.system(size: 12))
+                .foregroundStyle(Theme.Colors.textPrimary)
+            Spacer(minLength: 0)
+            Text(value)
+                .font(.system(size: 12))
+                .foregroundStyle(valueColor)
+            if showsChevron {
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Theme.Colors.textMuted)
+            }
+        }
+        .padding(EdgeInsets(top: 13, leading: 14, bottom: 13, trailing: 14))
+        .overlay(alignment: .bottom) {
+            if !isLastInGroup {
+                Rectangle()
+                    .fill(Color(hex: "#0F0F0F"))
+                    .frame(height: 0.5)
+            }
+        }
     }
 }
 
