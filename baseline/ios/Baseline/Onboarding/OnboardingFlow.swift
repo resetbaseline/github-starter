@@ -7,7 +7,7 @@ struct OnboardingFlow: View {
     var body: some View {
         VStack(spacing: 0) {
             TabView(selection: $onboarding.step) {
-                OnboardingScreen1()
+                OnboardingScreen1(onNext: { onboarding.goNext() })
                     .tag(0)
                 OnboardingScreen2()
                     .tag(1)

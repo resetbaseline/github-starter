@@ -1,7 +1,8 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { callHaiku } from "../_shared/anthropic-client.ts";
-import { COACH_VOICE_SYSTEM_PROMPT } from "../_shared/coach-voice.ts";
 import { calendarToday, validateTimeZone } from "../_shared/calendar.ts";
+import { COACH_VOICE_SYSTEM_PROMPT, GATE_NEXT_ACTION_SYSTEM_SUPPLEMENT } from "../_shared/coach-voice.ts";
+import { fetchNonNegotiableGoalNextAction } from "../_shared/next-action-goals.ts";
 import {
   applyEscalation,
   applyMismatchReduction,
@@ -84,6 +85,15 @@ export async function gateValidate(
   const priorCount = day.gate_triggers ?? 0;
   const isFocusBlock = input.trigger_source === "focus_block";
 
+  let nextAction: string | null = null;
+  try {
+    nextAction = await fetchNonNegotiableGoalNextAction(userSb, userId, day.id, input.active_non_negotiable);
+  } catch (_e) {
+    nextAction = null;
+  }
+
+  const gateCoachSystem = `${COACH_VOICE_SYSTEM_PROMPT}\n\n${GATE_NEXT_ACTION_SYSTEM_SUPPLEMENT}`;
+
   let timeGranted = 0;
   let coachResponse = "";
   let reasonClassification: string | null = null;
@@ -91,13 +101,15 @@ export async function gateValidate(
   if (isFocusBlock) {
     timeGranted = 0;
     const coach = await callHaiku(
-      COACH_VOICE_SYSTEM_PROMPT,
+      gateCoachSystem,
       [
         {
           role: "user",
           content:
             `Focus Block is active. Access grant must be 0 seconds.\nApp: ${input.app_name} (${input.app_bundle_id})\nUser message: """${input.stated_reason}"""\n` +
-              `Non-negotiable context: ${input.active_non_negotiable ?? "(none)"}\n\nReply max 2 sentences. Be direct; no shaming.`,
+              `Non-negotiable context: ${input.active_non_negotiable ?? "(none)"}\n` +
+              `next_action (first step for active NN goal, or null): ${nextAction ?? "null"}\n\n` +
+              `Reply max 2 sentences. Be direct; no shaming.`,
         },
       ],
       256,
@@ -135,7 +147,7 @@ export async function gateValidate(
     timeGranted = grant;
 
     const coach = await callHaiku(
-      COACH_VOICE_SYSTEM_PROMPT,
+      gateCoachSystem,
       [
         {
           role: "user",
@@ -144,6 +156,7 @@ export async function gateValidate(
             classification,
             time_granted_seconds: timeGranted,
             active_non_negotiable: input.active_non_negotiable,
+            next_action: nextAction,
           }),
         },
       ],

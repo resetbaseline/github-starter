@@ -21,13 +21,19 @@ export function coachGateUserMessage(args: {
   classification: string;
   time_granted_seconds: number;
   active_non_negotiable: string | null;
+  next_action: string | null;
 }): string {
   const nn = args.active_non_negotiable?.trim() || "(none provided)";
+  const na = typeof args.next_action === "string" && args.next_action.trim().length > 0
+    ? args.next_action.trim()
+    : "null";
+  const minutesRounded = Math.max(1, Math.round(args.time_granted_seconds / 60));
   return [
     `User typed reason: """${args.stated_reason}"""`,
     `Classifier label: ${args.classification}`,
-    `Time grant (seconds): ${args.time_granted_seconds}`,
+    `Time grant (seconds): ${args.time_granted_seconds} (~${minutesRounded} min)`,
     `Active non-negotiable context: ${nn}`,
+    `next_action (first step on that goal, JSON null literal if unset): ${na}`,
     ``,
     `Write the Gate reply: max 2 sentences. Reference their actual words. Name the time grant in plain language (seconds is fine).`,
   ].join("\n");
