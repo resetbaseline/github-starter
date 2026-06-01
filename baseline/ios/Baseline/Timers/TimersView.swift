@@ -19,9 +19,6 @@ struct TimersView: View {
                         if showsBlockedApps {
                             blockedAppsRow
                         }
-                        if showsDebrief {
-                            debriefCard
-                        }
                         todaysFocusRow
                     }
                     .padding(.horizontal, 16)
@@ -119,6 +116,8 @@ struct TimersView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 4)
+        .scaleEffect(viewModel.timerState == .completed ? 1.04 : 1)
+        .animation(.spring(response: 0.45, dampingFraction: 0.72), value: viewModel.timerState)
     }
 
     private var timerStateLabel: String {
@@ -283,10 +282,6 @@ struct TimersView: View {
         viewModel.timerState == .running || viewModel.timerState == .paused
     }
 
-    private var showsDebrief: Bool {
-        viewModel.timerState == .completed && !viewModel.debriefText.isEmpty
-    }
-
     private var blockedAppsRow: some View {
         HStack(spacing: 6) {
             Text("Blocking")
@@ -312,29 +307,6 @@ struct TimersView: View {
             }
             Spacer(minLength: 0)
         }
-    }
-
-    private var debriefCard: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text("COACH NOTE")
-                .font(.system(size: 8))
-                .foregroundStyle(Color(hex: "#4A3880"))
-                .tracking(1.2)
-                .textCase(.uppercase)
-            Text(viewModel.debriefText)
-                .font(.system(size: 10))
-                .foregroundStyle(Color(hex: "#9B7FD4"))
-                .lineSpacing(4)
-                .fixedSize(horizontal: false, vertical: true)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
-        .background(Color(hex: "#0F0828"))
-        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color(hex: "#2D1F4A"), lineWidth: 1),
-        )
     }
 
     private var todaysFocusRow: some View {

@@ -9,23 +9,72 @@ struct OnboardingFlow: View {
             TabView(selection: $onboarding.step) {
                 OnboardingScreen1(onNext: { onboarding.goNext() })
                     .tag(0)
-                OnboardingScreen2()
+                OnboardingScreen2(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
                     .tag(1)
-                OnboardingScreen3()
+                OnboardingScreen3(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
                     .tag(2)
-                LongTermGoalsView()
+                OnboardingScreen4(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
                     .tag(3)
-                OnboardingSetupView()
+                OnboardingScreen5(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
                     .tag(4)
+                OnboardingScreen6(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
+                    .tag(5)
+                OnboardingScreen7(
+                    onNext: { onboarding.goNext() },
+                    viewModel: onboarding,
+                )
+                    .tag(6)
+                OnboardingScreen8(onNext: { onboarding.goNext() })
+                    .tag(7)
+                OnboardingScreen9(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
+                    .tag(8)
+                OnboardingScreen10(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
+                    .tag(9)
+                OnboardingScreen11(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
+                    .tag(10)
+                OnboardingScreen12(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
+                    .tag(11)
+                OnboardingScreen13(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
+                    .tag(12)
+                OnboardingSetupView()
+                    .tag(13)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .animation(Theme.Animation.screenTransition, value: onboarding.step)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if onboarding.step != 0 && !onboarding.isLongTermGoalsStep {
+            if onboarding.step != 0 && onboarding.step != 1 && onboarding.step != 2 && onboarding.step != 3 && onboarding.step != 4 && onboarding.step != 5 && onboarding.step != 6 && onboarding.step != 7 && onboarding.step != 8 && onboarding.step != 9 && onboarding.step != 10 && onboarding.step != 11 && onboarding.step != 12 {
                 bottomChrome
-            } else if onboarding.isLongTermGoalsStep {
-                longTermGoalsBottomChrome
             }
         }
         .environmentObject(onboarding)
@@ -52,29 +101,6 @@ struct OnboardingFlow: View {
                     }
                     .frame(maxWidth: .infinity)
                 }
-            }
-        }
-        .padding(.horizontal, Theme.Spacing.md)
-        .padding(.top, Theme.Spacing.sm)
-        .padding(.bottom, Theme.Spacing.md)
-        .background(
-            Theme.Colors.surface
-                .shadow(color: .black.opacity(0.35), radius: 12, y: -4)
-        )
-    }
-
-    /// Long-term goals screen includes its own Continue / Skip; keep dots + Back only.
-    private var longTermGoalsBottomChrome: some View {
-        VStack(spacing: Theme.Spacing.md) {
-            pageDots
-            HStack(spacing: Theme.Spacing.sm) {
-                Button("Back") {
-                    onboarding.goBack()
-                }
-                .font(Theme.Typography.headline())
-                .foregroundStyle(Theme.Colors.textSecondary)
-                .buttonStyle(.plain)
-                Spacer(minLength: 0)
             }
         }
         .padding(.horizontal, Theme.Spacing.md)

@@ -1,16 +1,32 @@
 import Combine
+import FamilyControls
 import Foundation
 import SwiftUI
 
 @MainActor
 final class OnboardingViewModel: ObservableObject {
-    static let totalSteps = 5
+    static let totalSteps = 14
 
-    /// 0…2 intro pages, 3 long-term goals, 4 setup.
+    /// 0…12 intro pages, 13 setup.
     @Published var step: Int = 0
 
     /// Draft long-term goals (saved to `AuthManager` on final onboarding completion).
     @Published var longTermGoalDrafts: [LongTermGoalDraft] = []
+    @Published var preferredName: String = ""
+    @Published var distractions: [String] = []
+    @Published var vulnerableTimeWindow: String?
+    @Published var behavioralPatterns: [String] = []
+    @Published var userAge: Int = 22
+    @Published var dailyPhoneHours: Double = 4.0
+    @Published var yearsOnPhone: Double = 0.0
+    @Published var hasSeenReframe: Bool = false
+    @Published var selectedLifeAreas: [String] = []
+    @Published var lifeAreaDescription: String = ""
+    @Published var goalDetails: [String: String] = [:]
+    @Published var goalClassifications: [String: GoalClassification] = [:]
+    @Published var goalDates: [String: Date?] = [:]
+    @Published var anchors: [OnboardingAnchor] = []
+    @Published var gateSettings: GateSettings?
 
     var longTermGoals: [(text: String, category: String)] {
         longTermGoalDrafts.map { (text: $0.text, category: $0.category) }
@@ -18,8 +34,8 @@ final class OnboardingViewModel: ObservableObject {
 
     var isFirstStep: Bool { step == 0 }
     var isSetupStep: Bool { step == Self.totalSteps - 1 }
-    /// Long-term goals screen manages its own primary actions.
-    var isLongTermGoalsStep: Bool { step == 3 }
+    /// Legacy `LongTermGoalsView` when re-inserted in the flow.
+    var isLongTermGoalsStep: Bool { false }
 
     func stepLabel(forPage index: Int) -> String {
         "\(index + 1) of \(Self.totalSteps)"
@@ -33,6 +49,77 @@ final class OnboardingViewModel: ObservableObject {
     func goBack() {
         step = max(step - 1, 0)
         Theme.Haptics.lightImpact()
+    }
+
+    func setPreferredName(_ name: String) {
+        preferredName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func setDistractions(_ distractions: [String]) {
+        self.distractions = distractions
+    }
+
+    func setVulnerableTimeWindow(_ window: String?) {
+        vulnerableTimeWindow = window
+    }
+
+    func setBehavioralPatterns(_ patterns: [String]) {
+        behavioralPatterns = patterns
+    }
+
+    func setTimeEstimate(age: Int, dailyHours: Double, yearsOnPhone: Double) {
+        userAge = age
+        dailyPhoneHours = dailyHours
+        self.yearsOnPhone = yearsOnPhone
+    }
+
+    func markReframeSeen() {
+        hasSeenReframe = true
+    }
+
+    func setLifeAreas(areas: [String], description: String) {
+        selectedLifeAreas = areas
+        lifeAreaDescription = description
+    }
+
+    func setGoalDetails(_ details: [String: String]) {
+        goalDetails = details.filter {
+            !$0.value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    func setGoalClassifications(_ classifications: [String: GoalClassification]) {
+        goalClassifications = classifications
+    }
+
+    func setDefaultClassifications(for areas: [String]) {
+        var classifications = goalClassifications
+        for area in areas {
+            classifications[area] = GoalClassification(type: "outcome", extractedDate: nil)
+        }
+        goalClassifications = classifications
+    }
+
+    func setGoalDate(_ date: Date?, for area: String) {
+        var dates = goalDates
+        dates[area] = date
+        goalDates = dates
+    }
+
+    func setAnchors(_ anchors: [OnboardingAnchor]) {
+        self.anchors = anchors
+    }
+
+    func setGateSettings(
+        enabled: Bool,
+        activationMode: String,
+        activitySelection: FamilyActivitySelection,
+    ) {
+        gateSettings = GateSettings(
+            enabled: enabled,
+            activationMode: activationMode,
+            activitySelection: activitySelection,
+        )
     }
 
     func saveLongTermGoals(_ goals: [LongTermGoalDraft], auth: AuthManager? = nil) {

@@ -1,33 +1,27 @@
 import SwiftUI
 
-struct OnboardingScreen3: View {
+struct OnboardingScreen5: View {
     let onNext: () -> Void
     let onBack: () -> Void
 
     @EnvironmentObject private var onboarding: OnboardingViewModel
-    @State private var selectedDistractions: Set<String> = []
+    @State private var selectedPatterns: Set<String> = []
     @State private var otherText: String = ""
     @State private var showOtherField: Bool = false
-    @FocusState private var isOtherFieldFocused: Bool
+    @FocusState private var otherFieldFocused: Bool
 
-    private struct DistractionChip: Identifiable {
-        let id: String
-        let label: String
-        let symbol: String
-    }
-
-    private let chips: [DistractionChip] = [
-        DistractionChip(id: "Social media", label: "Social media", symbol: "person.2"),
-        DistractionChip(id: "Messaging & group chats", label: "Messaging & group chats", symbol: "bubble.left"),
-        DistractionChip(id: "Streaming & YouTube", label: "Streaming & YouTube", symbol: "play.rectangle"),
-        DistractionChip(id: "Gaming", label: "Gaming", symbol: "gamecontroller"),
-        DistractionChip(id: "News & current events", label: "News & current events", symbol: "newspaper"),
-        DistractionChip(id: "Online shopping", label: "Online shopping", symbol: "bag"),
-        DistractionChip(id: "Other", label: "Other", symbol: "plus"),
+    private let patterns: [(label: String, sublabel: String)] = [
+        ("Lack of discipline", "I know what to do. I just don't do it."),
+        ("My environment", "Everything around me pulls me off course."),
+        ("I get overwhelmed", "Tasks pile up and I shut down completely."),
+        ("Don't know where to start", "The distance between now and the goal feels too large."),
+        ("I lose momentum", "One bad day and the whole streak falls apart."),
+        ("Stress and anxiety", "My mental state derails my intentions."),
+        ("Other", "Something else is getting in the way."),
     ]
 
     private var canContinue: Bool {
-        !selectedDistractions.isEmpty
+        !selectedPatterns.isEmpty
     }
 
     private var trimmedOtherText: String {
@@ -49,12 +43,12 @@ struct OnboardingScreen3: View {
                         headline
                             .padding(.top, 48)
 
-                        Text("Select everything that applies.")
+                        Text("Select everything that feels true.")
                             .font(.system(size: 15, weight: .light))
                             .foregroundStyle(Color(hex: "#555555"))
                             .padding(.top, 16)
 
-                        chipGrid
+                        cardList
                             .padding(.top, 32)
 
                         if showOtherField {
@@ -63,7 +57,7 @@ struct OnboardingScreen3: View {
                                 .transition(.opacity.combined(with: .move(edge: .top)))
                         }
 
-                        Text("This helps your coach speak to what actually pulls you away.")
+                        Text("Your coach uses this to anticipate obstacles before they happen.")
                             .font(.system(size: 13, weight: .light))
                             .foregroundStyle(Color(hex: "#555555"))
                             .padding(.top, 20)
@@ -104,9 +98,9 @@ struct OnboardingScreen3: View {
 
     private var headline: some View {
         (
-            Text("What pulls you\n")
+            Text("What pattern\n")
                 .foregroundStyle(Color.white)
-            + Text("off track?")
+            + Text("keeps repeating?")
                 .foregroundStyle(Color(hex: "#8B7DFF"))
         )
         .font(.system(size: 36, weight: .light, design: .serif))
@@ -114,50 +108,50 @@ struct OnboardingScreen3: View {
         .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var chipGrid: some View {
+    private var cardList: some View {
         VStack(spacing: 10) {
-            LazyVGrid(
-                columns: [
-                    GridItem(.flexible(), spacing: 10),
-                    GridItem(.flexible(), spacing: 10),
-                ],
-                spacing: 10,
-            ) {
-                ForEach(chips.prefix(6)) { chip in
-                    chipButton(chip)
-                }
-            }
-
-            HStack(spacing: 10) {
-                chipButton(chips[6])
-                Color.clear
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 44)
-                    .accessibilityHidden(true)
+            ForEach(patterns, id: \.label) { pattern in
+                patternCard(label: pattern.label, sublabel: pattern.sublabel)
             }
         }
     }
 
-    private func chipButton(_ chip: DistractionChip) -> some View {
-        let isSelected = selectedDistractions.contains(chip.label)
+    private func patternCard(label: String, sublabel: String) -> some View {
+        let isSelected = selectedPatterns.contains(label)
 
         return Button {
-            toggleChip(chip.label)
+            togglePattern(label)
         } label: {
-            HStack(spacing: 8) {
-                Image(systemName: chip.symbol)
-                    .symbolRenderingMode(.hierarchical)
-                    .font(.system(size: 16))
-                    .foregroundStyle(isSelected ? Color.white : Color(hex: "#888888"))
+            ZStack(alignment: .trailing) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(label)
+                        .font(.system(size: 15, weight: .regular))
+                        .foregroundStyle(isSelected ? Color.white : Color(hex: "#888888"))
+                        .multilineTextAlignment(.leading)
 
-                Text(chip.label)
-                    .font(.system(size: 15, weight: .light))
-                    .foregroundStyle(isSelected ? Color.white : Color(hex: "#888888"))
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
+                    Text(sublabel)
+                        .font(.system(size: 11, weight: .light))
+                        .foregroundStyle(isSelected ? Color(hex: "#8B7DFF") : Color(hex: "#444444"))
+                        .multilineTextAlignment(.leading)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.9)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.leading, 16)
+                .padding(.trailing, 40)
+                .padding(.vertical, 14)
+
+                if isSelected {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12))
+                        .foregroundStyle(Color(hex: "#8B7DFF"))
+                        .padding(.trailing, 16)
+                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
+                }
             }
-            .frame(maxWidth: .infinity)
-            .frame(height: 44)
+            .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
             .background(isSelected ? Color(hex: "#1A0D35") : Color(hex: "#161616"))
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
@@ -169,13 +163,14 @@ struct OnboardingScreen3: View {
             )
         }
         .buttonStyle(.plain)
+        .animation(.easeInOut(duration: 0.15), value: isSelected)
     }
 
     private var otherField: some View {
         TextField(
             "",
             text: $otherText,
-            prompt: Text("What else?")
+            prompt: Text("Describe the pattern...")
                 .font(.system(size: 15, weight: .light))
                 .foregroundStyle(Color(hex: "#444444")),
         )
@@ -183,23 +178,23 @@ struct OnboardingScreen3: View {
         .foregroundStyle(Color.white)
         .textInputAutocapitalization(.sentences)
         .autocorrectionDisabled()
-        .focused($isOtherFieldFocused)
+        .focused($otherFieldFocused)
         .padding(.horizontal, 16)
         .frame(height: 44)
         .background(Color(hex: "#111111"))
         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(Color(hex: "#8B7DFF"), lineWidth: 1),
+                .stroke(
+                    otherFieldFocused ? Color(hex: "#8B7DFF") : Color(hex: "#2A2A2A"),
+                    lineWidth: 1,
+                ),
         )
-        .onAppear {
-            isOtherFieldFocused = true
-        }
     }
 
     private var continueButton: some View {
         Button {
-            onboarding.setDistractions(buildDistractions())
+            onboarding.setBehavioralPatterns(buildPatterns())
             onNext()
         } label: {
             Text("Continue →")
@@ -224,31 +219,34 @@ struct OnboardingScreen3: View {
 
     // MARK: - Actions
 
-    private func toggleChip(_ label: String) {
+    private func togglePattern(_ label: String) {
         withAnimation(.easeInOut(duration: 0.15)) {
-            if selectedDistractions.contains(label) {
-                selectedDistractions.remove(label)
+            if selectedPatterns.contains(label) {
+                selectedPatterns.remove(label)
                 if label == "Other" {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         showOtherField = false
                     }
                     otherText = ""
-                    isOtherFieldFocused = false
+                    otherFieldFocused = false
                 }
             } else {
-                selectedDistractions.insert(label)
+                selectedPatterns.insert(label)
                 if label == "Other" {
                     withAnimation(.easeInOut(duration: 0.2)) {
                         showOtherField = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                        otherFieldFocused = true
                     }
                 }
             }
         }
     }
 
-    private func buildDistractions() -> [String] {
-        var result = selectedDistractions.sorted()
-        if selectedDistractions.contains("Other"), !trimmedOtherText.isEmpty {
+    private func buildPatterns() -> [String] {
+        var result = selectedPatterns.sorted()
+        if selectedPatterns.contains("Other"), !trimmedOtherText.isEmpty {
             result.removeAll { $0 == "Other" }
             result.append(trimmedOtherText)
         }

@@ -104,6 +104,30 @@ final class HomeViewModel: ObservableObject {
         refreshGoalCounts()
     }
 
+    /// Marks a non-negotiable (daily anchor) complete and records streak activity when authenticated.
+    func completeAnchor(_ anchor: HomeGoalItem) {
+        guard anchor.isNonNegotiable, !anchor.isCompleted else { return }
+        guard let index = goals.firstIndex(where: { $0.id == anchor.id }) else { return }
+
+        let item = goals[index]
+        goals[index] = HomeGoalItem(
+            id: item.id,
+            title: item.title,
+            category: item.category,
+            timeLabel: item.timeLabel,
+            isNonNegotiable: item.isNonNegotiable,
+            isCompleted: true,
+        )
+        refreshGoalCounts()
+
+        Task {
+            await EdgeFunctionsService.processAnchorComplete(
+                anchorId: anchor.id,
+                anchorText: anchor.title,
+            )
+        }
+    }
+
     private func sortGoals() {
         goals.sort { a, b in
             if a.isNonNegotiable != b.isNonNegotiable { return a.isNonNegotiable && !b.isNonNegotiable }

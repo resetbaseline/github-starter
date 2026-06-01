@@ -13,6 +13,8 @@ const swiftFiles = [
   "Baseline/App/MainTabView.swift",
   "Baseline/App/AppAppearance.swift",
   "Baseline/Theme/Theme.swift",
+  "Baseline/Shared/AnthropicService.swift",
+  "Baseline/Onboarding/GoalClassification.swift",
   "Baseline/Auth/AuthManager.swift",
   "Baseline/Auth/LoginView.swift",
   "Baseline/Auth/SignUpView.swift",
@@ -20,10 +22,22 @@ const swiftFiles = [
   "Baseline/Onboarding/OnboardingViewModel.swift",
   "Baseline/Onboarding/OnboardingContentPage.swift",
   "Baseline/Onboarding/OnboardingScreen1.swift",
+  "Baseline/Onboarding/OnboardingPhaseIndicator.swift",
   "Baseline/Onboarding/OnboardingScreen2.swift",
   "Baseline/Onboarding/OnboardingScreen3.swift",
   "Baseline/Onboarding/LongTermGoalsView.swift",
   "Baseline/Onboarding/OnboardingScreen4.swift",
+  "Baseline/Onboarding/OnboardingScreen5.swift",
+  "Baseline/Onboarding/OnboardingScreen6.swift",
+  "Baseline/Onboarding/OnboardingScreen7.swift",
+  "Baseline/Onboarding/OnboardingScreen8.swift",
+  "Baseline/Onboarding/OnboardingScreen9.swift",
+  "Baseline/Onboarding/OnboardingScreen10.swift",
+  "Baseline/Onboarding/OnboardingScreen11.swift",
+  "Baseline/Onboarding/OnboardingScreen12.swift",
+  "Baseline/Onboarding/OnboardingScreen13.swift",
+  "Baseline/Onboarding/GateSettings.swift",
+  "Baseline/Onboarding/OnboardingAnchor.swift",
   "Baseline/Onboarding/OnboardingSetupView.swift",
   "Baseline/Home/HomeView.swift",
   "Baseline/Home/StreakCardView.swift",
@@ -54,6 +68,7 @@ const swiftFiles = [
   "Baseline/MessageToSelf/MessageToSelfViewModel.swift",
   "Baseline/Shared/APIClient.swift",
   "Baseline/Shared/SupabaseClient.swift",
+  "Baseline/Shared/EdgeFunctionsService.swift",
   "Baseline/Shared/Components/BaselineButton.swift",
   "Baseline/Shared/Components/CoachAssistModal.swift",
   "Baseline/Shared/Components/GoalRowView.swift",
@@ -187,6 +202,7 @@ line(
     `${fileRef["Baseline/Onboarding/OnboardingViewModel.swift"]} /* OnboardingViewModel.swift */`,
     `${fileRef["Baseline/Onboarding/OnboardingContentPage.swift"]} /* OnboardingContentPage.swift */`,
     `${fileRef["Baseline/Onboarding/OnboardingScreen1.swift"]} /* OnboardingScreen1.swift */`,
+    `${fileRef["Baseline/Onboarding/OnboardingPhaseIndicator.swift"]} /* OnboardingPhaseIndicator.swift */`,
     `${fileRef["Baseline/Onboarding/OnboardingScreen2.swift"]} /* OnboardingScreen2.swift */`,
     `${fileRef["Baseline/Onboarding/OnboardingScreen3.swift"]} /* OnboardingScreen3.swift */`,
     `${fileRef["Baseline/Onboarding/LongTermGoalsView.swift"]} /* LongTermGoalsView.swift */`,
@@ -399,10 +415,12 @@ line("\t\t};");
 line("\t\t/* End XCSwiftPackageProductDependency section */");
 line("");
 
-const common = `				CODE_SIGN_STYLE = Automatic;
+const common = `				CODE_SIGN_ENTITLEMENTS = Baseline/Baseline.entitlements;
+				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSFamilyControlsUsageDescription = "Baseline uses Screen Time to help you pause before opening distracting apps during focus sessions.";
 				INFOPLIST_KEY_SUPABASE_ANON_KEY = $(SUPABASE_ANON_KEY);
 				INFOPLIST_KEY_SUPABASE_URL = $(SUPABASE_URL);
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;

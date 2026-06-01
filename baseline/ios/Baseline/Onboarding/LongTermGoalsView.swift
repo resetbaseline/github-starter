@@ -1,10 +1,16 @@
 import SwiftUI
 
+/// Detailed long-term goal entry (free text, categories, optional dates, AI icon mapping).
+/// Onboarding Screen 9 (`OnboardingScreen9`) collects life areas first; this view stays available
+/// for the full goal editor and is unchanged for Profile / later onboarding steps.
 struct LongTermGoalsView: View {
     @EnvironmentObject private var onboarding: OnboardingViewModel
     @EnvironmentObject private var auth: AuthManager
 
     private static let categories = ["Work", "Health", "Learning", "Creative", "Finance", "Personal"]
+
+    /// When false, only persists goals — does not advance the onboarding pager (e.g. embedded outside `OnboardingFlow`).
+    var advancesOnboardingStep: Bool = true
 
     @State private var goals: [LongTermGoalDraft] = [LongTermGoalDraft()]
 
@@ -72,14 +78,18 @@ struct LongTermGoalsView: View {
 
                     BaselineButton(title: "Continue →") {
                         onboarding.saveLongTermGoals(nonEmptyGoals.map { $0.forPersistence() }, auth: auth)
-                        onboarding.goNext()
+                        if advancesOnboardingStep {
+                            onboarding.goNext()
+                        }
                     }
                     .opacity(canContinue ? 1 : 0.4)
                     .disabled(!canContinue)
 
                     Button("Skip for now") {
                         onboarding.saveLongTermGoals([])
-                        onboarding.goNext()
+                        if advancesOnboardingStep {
+                            onboarding.goNext()
+                        }
                     }
                     .font(.system(size: 11))
                     .foregroundStyle(Theme.Colors.textMuted)

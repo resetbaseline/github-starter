@@ -399,6 +399,12 @@ verify_jwt = true
 [functions.send-support-email]
 verify_jwt = true
 
+[functions.process-anchor-complete]
+verify_jwt = true
+
+[functions.process-focus-complete]
+verify_jwt = true
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.

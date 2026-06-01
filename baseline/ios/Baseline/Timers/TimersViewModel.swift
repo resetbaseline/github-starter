@@ -24,7 +24,6 @@ final class TimersViewModel: ObservableObject {
     @Published var secondsRemaining: Int = 25 * 60
     @Published var secondsTotal: Int = 25 * 60
     @Published var hardLockActive: Bool = false
-    @Published var debriefText: String = ""
     @Published var focusMinutesLoggedToday: Int = 32
 
     @Published private(set) var blockedApps: [BlockedApp] = [
@@ -53,6 +52,7 @@ final class TimersViewModel: ObservableObject {
     }
 
     private var countdownTimer: Timer?
+    private var completionDismissTask: Task<Void, Never>?
 
     init() {
         syncDurationSeconds()
@@ -92,9 +92,9 @@ final class TimersViewModel: ObservableObject {
     }
 
     func startSession() {
+        completionDismissTask?.cancel()
         secondsTotal = selectedDuration * 60
         secondsRemaining = secondsTotal
-        debriefText = ""
         timerState = .running
         startCountdown()
     }
@@ -110,16 +110,16 @@ final class TimersViewModel: ObservableObject {
     }
 
     func endSession() {
+        completionDismissTask?.cancel()
         invalidateCountdown()
         timerState = .idle
         syncDurationSeconds()
-        debriefText = ""
     }
 
     func resetAfterComplete() {
+        completionDismissTask?.cancel()
         invalidateCountdown()
         timerState = .idle
-        debriefText = ""
         syncDurationSeconds()
     }
 
@@ -158,18 +158,24 @@ final class TimersViewModel: ObservableObject {
     private func completeSession() {
         invalidateCountdown()
         secondsRemaining = 0
+        focusMinutesLoggedToday += selectedDuration
         timerState = .completed
-        debriefText = generateDebrief()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
+
+        handleSessionComplete()
+
+        completionDismissTask?.cancel()
+        completionDismissTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard !Task.isCancelled, timerState == .completed else { return }
+            resetAfterComplete()
+        }
     }
 
-    private func generateDebrief() -> String {
-        if selectedDuration >= 25 {
-            return "You did \(selectedDuration) minutes. No interruptions logged. That's a clean session."
+    private func handleSessionComplete() {
+        let durationMinutes = selectedDuration
+        Task {
+            await EdgeFunctionsService.processFocusComplete(durationMinutes: durationMinutes)
         }
-        if selectedDuration < 25 {
-            return "Short session — \(selectedDuration) minutes. Still counts."
-        }
-        return "Session complete."
     }
 }

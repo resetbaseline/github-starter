@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { incrementStreak } from "../_shared/streak.ts";
 import {
   addCalendarDays,
   classifyDayResult,
@@ -233,22 +234,11 @@ export async function processCheckIn(
     const userFreeze = userRow as { streak_freeze_count: number; streak_freeze_used_this_month: number };
 
     if (streakCountsForDay(dayStatus)) {
-      if (streak.last_updated_date !== day.date) {
-        const current_count = streak.current_count + 1;
-        const max_count = Math.max(streak.max_count, current_count);
-        const { error: stUp } = await serviceSb
-          .from("streaks")
-          .update({
-            current_count,
-            max_count,
-            last_updated_date: day.date,
-            active: true,
-            end_date: null,
-          })
-          .eq("user_id", userId);
-        if (stUp) {
-          return { data: null, error: { message: stUp.message, code: stUp.code, detail: stUp.details ?? undefined } };
-        }
+      try {
+        await incrementStreak(serviceSb, userId, day.date, "check_in");
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        return { data: null, error: { message: msg, code: "streak_update_failed" } };
       }
     } else if (streakBreaksUnlessFreeze(dayStatus)) {
       if (input.streak_freeze_used) {

@@ -291,6 +291,16 @@ private struct NonNegotiablesSection: View {
     }
 
     private func nonNegotiableRow(_ goal: HomeGoalItem) -> some View {
+        Button {
+            viewModel.completeAnchor(goal)
+        } label: {
+            nonNegotiableRowContent(goal)
+        }
+        .buttonStyle(.plain)
+        .disabled(goal.isCompleted)
+    }
+
+    private func nonNegotiableRowContent(_ goal: HomeGoalItem) -> some View {
         HStack(alignment: .center, spacing: 0) {
             HStack(alignment: .center, spacing: 12) {
                 checkbox(done: goal.isCompleted)
