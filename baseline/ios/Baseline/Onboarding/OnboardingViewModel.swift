@@ -5,9 +5,9 @@ import SwiftUI
 
 @MainActor
 final class OnboardingViewModel: ObservableObject {
-    static let totalSteps = 14
+    static let totalSteps = 15
 
-    /// 0…12 intro pages, 13 setup.
+    /// 0…13 intro pages, 14 setup.
     @Published var step: Int = 0
 
     /// Draft long-term goals (saved to `AuthManager` on final onboarding completion).

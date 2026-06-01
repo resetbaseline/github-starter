@@ -36,6 +36,7 @@ const swiftFiles = [
   "Baseline/Onboarding/OnboardingScreen11.swift",
   "Baseline/Onboarding/OnboardingScreen12.swift",
   "Baseline/Onboarding/OnboardingScreen13.swift",
+  "Baseline/Onboarding/OnboardingScreen14.swift",
   "Baseline/Onboarding/GateSettings.swift",
   "Baseline/Onboarding/OnboardingAnchor.swift",
   "Baseline/Onboarding/OnboardingSetupView.swift",
