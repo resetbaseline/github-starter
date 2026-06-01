@@ -5,9 +5,9 @@ import SwiftUI
 
 @MainActor
 final class OnboardingViewModel: ObservableObject {
-    static let totalSteps = 15
+    static let totalSteps = 16
 
-    /// 0…13 intro pages, 14 setup.
+    /// 0…14 intro pages, 15 final screen.
     @Published var step: Int = 0
 
     /// Draft long-term goals (saved to `AuthManager` on final onboarding completion).
@@ -27,6 +27,18 @@ final class OnboardingViewModel: ObservableObject {
     @Published var goalDates: [String: Date?] = [:]
     @Published var anchors: [OnboardingAnchor] = []
     @Published var gateSettings: GateSettings?
+    @Published var morningNotificationTime: Date = {
+        var components = DateComponents()
+        components.hour = 7
+        components.minute = 0
+        return Calendar.current.date(from: components) ?? Date()
+    }()
+    @Published var eveningCheckinTime: Date = {
+        var components = DateComponents()
+        components.hour = 21
+        components.minute = 0
+        return Calendar.current.date(from: components) ?? Date()
+    }()
 
     var longTermGoals: [(text: String, category: String)] {
         longTermGoalDrafts.map { (text: $0.text, category: $0.category) }
@@ -120,6 +132,16 @@ final class OnboardingViewModel: ObservableObject {
             activationMode: activationMode,
             activitySelection: activitySelection,
         )
+    }
+
+    func setSchedule(morningTime: Date, eveningTime: Date) {
+        morningNotificationTime = morningTime
+        eveningCheckinTime = eveningTime
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        UserDefaults.standard.set(formatter.string(from: morningTime), forKey: "baseline.morningNotificationTime")
+        UserDefaults.standard.set(formatter.string(from: eveningTime), forKey: "baseline.eveningCheckinTime")
     }
 
     func saveLongTermGoals(_ goals: [LongTermGoalDraft], auth: AuthManager? = nil) {

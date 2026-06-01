@@ -37,6 +37,7 @@ const swiftFiles = [
   "Baseline/Onboarding/OnboardingScreen12.swift",
   "Baseline/Onboarding/OnboardingScreen13.swift",
   "Baseline/Onboarding/OnboardingScreen14.swift",
+  "Baseline/Onboarding/OnboardingScreen16.swift",
   "Baseline/Onboarding/GateSettings.swift",
   "Baseline/Onboarding/OnboardingAnchor.swift",
   "Baseline/Onboarding/OnboardingSetupView.swift",
@@ -70,6 +71,7 @@ const swiftFiles = [
   "Baseline/Shared/APIClient.swift",
   "Baseline/Shared/SupabaseClient.swift",
   "Baseline/Shared/EdgeFunctionsService.swift",
+  "Baseline/Shared/NotificationScheduler.swift",
   "Baseline/Shared/Components/BaselineButton.swift",
   "Baseline/Shared/Components/CoachAssistModal.swift",
   "Baseline/Shared/Components/GoalRowView.swift",
@@ -422,6 +424,7 @@ const common = `				CODE_SIGN_ENTITLEMENTS = Baseline/Baseline.entitlements;
 				DEVELOPMENT_TEAM = "";
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSFamilyControlsUsageDescription = "Baseline uses Screen Time to help you pause before opening distracting apps during focus sessions.";
+				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Baseline uses notifications to send your morning anchor and evening check-in reminder.";
 				INFOPLIST_KEY_SUPABASE_ANON_KEY = $(SUPABASE_ANON_KEY);
 				INFOPLIST_KEY_SUPABASE_URL = $(SUPABASE_URL);
 				INFOPLIST_KEY_UIUserInterfaceStyle = Dark;

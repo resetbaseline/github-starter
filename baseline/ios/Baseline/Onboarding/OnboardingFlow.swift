@@ -71,14 +71,19 @@ struct OnboardingFlow: View {
                     onBack: { onboarding.goBack() },
                 )
                     .tag(13)
-                OnboardingSetupView()
+                OnboardingSetupView(
+                    onNext: { onboarding.goNext() },
+                    onBack: { onboarding.goBack() },
+                )
                     .tag(14)
+                OnboardingScreen16()
+                    .tag(15)
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
             .animation(Theme.Animation.screenTransition, value: onboarding.step)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            if onboarding.step != 0 && onboarding.step != 1 && onboarding.step != 2 && onboarding.step != 3 && onboarding.step != 4 && onboarding.step != 5 && onboarding.step != 6 && onboarding.step != 7 && onboarding.step != 8 && onboarding.step != 9 && onboarding.step != 10 && onboarding.step != 11 && onboarding.step != 12 && onboarding.step != 13 {
+            if onboarding.step != 0 && onboarding.step != 1 && onboarding.step != 2 && onboarding.step != 3 && onboarding.step != 4 && onboarding.step != 5 && onboarding.step != 6 && onboarding.step != 7 && onboarding.step != 8 && onboarding.step != 9 && onboarding.step != 10 && onboarding.step != 11 && onboarding.step != 12 && onboarding.step != 13 && onboarding.step != 14 {
                 bottomChrome
             }
         }

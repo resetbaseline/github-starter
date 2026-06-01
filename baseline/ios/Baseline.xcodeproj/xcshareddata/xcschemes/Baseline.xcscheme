@@ -3,14 +3,14 @@
    <BuildAction parallelizeBuildables="YES" buildImplicitDependencies="YES">
       <BuildActionEntries>
          <BuildActionEntry buildForTesting="YES" buildForRunning="YES" buildForProfiling="YES" buildForArchiving="YES" buildForAnalyzing="YES">
-            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="84789F3478FCB8206733C15A" BuildableName="Baseline.app" BlueprintName="Baseline" ReferencedContainer="container:Baseline.xcodeproj"/>
+            <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="1F37B08C098C76BCBB15DF43" BuildableName="Baseline.app" BlueprintName="Baseline" ReferencedContainer="container:Baseline.xcodeproj"/>
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction buildConfiguration="Debug" shouldUseLaunchSchemeArgsEnv="YES"/>
    <LaunchAction buildConfiguration="Debug" launchStyle="0" useCustomWorkingDirectory="NO">
       <BuildableProductRunnable runnableDebuggingMode="0">
-         <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="84789F3478FCB8206733C15A" BuildableName="Baseline.app" BlueprintName="Baseline" ReferencedContainer="container:Baseline.xcodeproj"/>
+         <BuildableReference BuildableIdentifier="primary" BlueprintIdentifier="1F37B08C098C76BCBB15DF43" BuildableName="Baseline.app" BlueprintName="Baseline" ReferencedContainer="container:Baseline.xcodeproj"/>
       </BuildableProductRunnable>
    </LaunchAction>
    <ProfileAction buildConfiguration="Release"/>

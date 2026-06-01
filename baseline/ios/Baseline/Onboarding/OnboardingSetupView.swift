@@ -1,130 +1,236 @@
 import SwiftUI
+import UserNotifications
+
+#if canImport(UIKit)
+import UIKit
+#endif
 
 struct OnboardingSetupView: View {
-    @EnvironmentObject private var auth: AuthManager
-    @EnvironmentObject private var onboarding: OnboardingViewModel
-    @State private var displayName: String = ""
-    @State private var showNameError = false
-    @State private var wakeTime =
-        Calendar.current.date(bySettingHour: 7, minute: 0, second: 0, of: Date()) ?? Date()
-    @State private var checkInTime =
-        Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: Date()) ?? Date()
+    let onNext: () -> Void
+    let onBack: () -> Void
 
-    private var trimmedName: String {
-        displayName.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
+    @EnvironmentObject var onboarding: OnboardingViewModel
 
-    private var nameIsReady: Bool {
-        !trimmedName.isEmpty
-    }
+    @State private var morningTime: Date = {
+        var components = DateComponents()
+        components.hour = 7
+        components.minute = 0
+        return Calendar.current.date(from: components) ?? Date()
+    }()
+
+    @State private var eveningTime: Date = {
+        var components = DateComponents()
+        components.hour = 21
+        components.minute = 0
+        return Calendar.current.date(from: components) ?? Date()
+    }()
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: Theme.Spacing.lg) {
-                Text(OnboardingViewModel.stepLabel(forStaticPage: 4))
-                    .font(Theme.Typography.caption1())
-                    .foregroundStyle(Theme.Colors.textMuted)
+        ZStack {
+            Color(hex: "#0A0A0A")
+                .ignoresSafeArea()
 
-                Text("Almost there")
-                    .font(Theme.Typography.title1())
-                    .foregroundStyle(Theme.Colors.textPrimary)
+            VStack(spacing: 0) {
+                topBar
+                    .padding(.top, 24)
+                    .padding(.horizontal, 20)
 
-                Text("We’ll use this for greetings in the app. You can change it later in Profile.")
-                    .font(Theme.Typography.body())
-                    .foregroundStyle(Theme.Colors.textSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        headline
+                            .padding(.top, 32)
 
-                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-                    Text("What should we call you?")
-                        .font(Theme.Typography.subheadline())
-                        .foregroundStyle(Theme.Colors.textSecondary)
+                        morningSection
+                            .padding(.top, 28)
 
-                    TextField("Your name", text: $displayName)
-                        .font(Theme.Typography.body())
-                        .foregroundStyle(Theme.Colors.textPrimary)
-                        .padding(Theme.Spacing.sm)
-                        .background(Theme.Colors.surface)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous)
-                                .stroke(Theme.Colors.border, lineWidth: 1)
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
-                        .textContentType(.name)
-                        .textInputAutocapitalization(.words)
-                        .onChange(of: displayName) { _, _ in
-                            if nameIsReady {
-                                showNameError = false
-                            }
-                        }
+                        eveningSection
+                            .padding(.top, 24)
 
-                    if showNameError {
-                        Text("We need something to call you")
-                            .font(Theme.Typography.caption1())
-                            .foregroundStyle(Theme.Colors.textMuted)
+                        notificationLine
+                            .padding(.top, 24)
+                            .padding(.bottom, 16)
                     }
                 }
 
-                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-                    Text("Time zone")
-                        .font(Theme.Typography.subheadline())
-                        .foregroundStyle(Theme.Colors.textSecondary)
-                    Text(TimeZone.current.identifier)
-                        .font(Theme.Typography.callout())
-                        .foregroundStyle(Theme.Colors.textPrimary)
-                    Text("Schedules and day boundaries follow your device time zone. You can adjust in Profile when travel mode ships.")
-                        .font(Theme.Typography.footnote())
-                        .foregroundStyle(Theme.Colors.textMuted)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-
-                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-                    Text("When do you start your day?")
-                        .font(Theme.Typography.subheadline())
-                        .foregroundStyle(Theme.Colors.textSecondary)
-                    DatePicker("", selection: $wakeTime, displayedComponents: .hourAndMinute)
-                        .datePickerStyle(.wheel)
-                        .labelsHidden()
-                }
-
-                VStack(alignment: .leading, spacing: Theme.Spacing.xs) {
-                    Text("When do you want to close it?")
-                        .font(Theme.Typography.subheadline())
-                        .foregroundStyle(Theme.Colors.textSecondary)
-                    DatePicker("", selection: $checkInTime, displayedComponents: .hourAndMinute)
-                        .datePickerStyle(.wheel)
-                        .labelsHidden()
-                }
-
-                Button(action: attemptGetStarted) {
-                    Text("Get started")
-                        .font(Theme.Typography.headline())
-                        .foregroundStyle(Theme.Colors.textPrimary)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, Theme.Spacing.sm)
-                        .background(Theme.Colors.accent)
-                        .clipShape(RoundedRectangle(cornerRadius: Theme.Radius.card, style: .continuous))
-                }
-                .buttonStyle(.plain)
-                .opacity(nameIsReady ? 1 : 0.4)
-                .padding(.top, Theme.Spacing.sm)
+                startButton
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, Theme.Spacing.md)
-            .padding(.top, Theme.Spacing.lg)
-            .padding(.bottom, Theme.Spacing.xl)
+        }
+        .onAppear {
+            configureDatePickerAppearance()
         }
     }
 
-    private func attemptGetStarted() {
-        guard nameIsReady else {
-            showNameError = true
-            return
+    // MARK: - Top bar
+
+    private var topBar: some View {
+        ZStack {
+            OnboardingPhaseIndicator(activePhase: 4)
+
+            HStack {
+                Button(action: onBack) {
+                    Text("‹")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundStyle(Color(hex: "#555555"))
+                        .frame(width: 32, height: 32, alignment: .leading)
+                }
+                .buttonStyle(.plain)
+
+                Spacer(minLength: 0)
+            }
         }
-        auth.completeOnboarding(
-            preferredName: trimmedName,
-            wakeTime: wakeTime,
-            checkInTime: checkInTime,
-            longTermGoals: onboarding.longTermGoalDrafts,
+    }
+
+    // MARK: - Content
+
+    private var headline: some View {
+        (
+            Text("Almost set.\n")
+                .foregroundStyle(Color.white)
+            + Text("Last few things.")
+                .foregroundStyle(Color(hex: "#8B7DFF"))
         )
+        .font(.system(size: 36, weight: .light, design: .serif))
+        .multilineTextAlignment(.leading)
+        .fixedSize(horizontal: false, vertical: true)
+        .padding(.horizontal, 32)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var morningSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Start your day at")
+                .font(.system(size: 13, weight: .light))
+                .foregroundStyle(Color(hex: "#888888"))
+
+            Text("Your coach sends your morning anchor notification at this time.")
+                .font(.system(size: 12, weight: .light))
+                .foregroundStyle(Color(hex: "#444444"))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
+
+            schedulePicker(selection: $morningTime)
+                .padding(.top, 8)
+        }
+        .padding(.horizontal, 32)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var eveningSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text("Daily check-in time")
+                .font(.system(size: 13, weight: .light))
+                .foregroundStyle(Color(hex: "#888888"))
+
+            Text("Your daily check-in reminder fires at this time.")
+                .font(.system(size: 12, weight: .light))
+                .foregroundStyle(Color(hex: "#444444"))
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 4)
+
+            schedulePicker(selection: $eveningTime)
+                .padding(.top, 8)
+        }
+        .padding(.horizontal, 32)
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func schedulePicker(selection: Binding<Date>) -> some View {
+        DatePicker(
+            "",
+            selection: selection,
+            displayedComponents: .hourAndMinute,
+        )
+        .datePickerStyle(.wheel)
+        .labelsHidden()
+        .frame(height: 110)
+        .clipped()
+        .padding(.horizontal, 32)
+        .background(Color(hex: "#111111"))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color(hex: "#2A2A2A"), lineWidth: 1),
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .colorScheme(.dark)
+    }
+
+    private var notificationLine: some View {
+        HStack(alignment: .top, spacing: 6) {
+            Image(systemName: "bell")
+                .font(.system(size: 12, weight: .light))
+                .foregroundStyle(Color(hex: "#555555"))
+
+            Text("Both times require notifications — you'll be asked to allow them now.")
+                .font(.system(size: 12, weight: .light))
+                .foregroundStyle(Color(hex: "#555555"))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 40)
+        .frame(maxWidth: .infinity)
+    }
+
+    private var startButton: some View {
+        Button(action: handleStartBaseline) {
+            HStack(spacing: 6) {
+                Text("Start Baseline →")
+                    .font(.system(size: 17, weight: .regular))
+            }
+            .foregroundStyle(Color.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(Color(hex: "#7C5CBF"))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .buttonStyle(.plain)
+    }
+
+    // MARK: - Actions
+
+    private func handleStartBaseline() {
+        onboarding.setSchedule(morningTime: morningTime, eveningTime: eveningTime)
+
+        let morning = morningTime
+        let evening = eveningTime
+
+        UNUserNotificationCenter.current().getNotificationSettings { settings in
+            DispatchQueue.main.async {
+                switch settings.authorizationStatus {
+                case .notDetermined:
+                    UNUserNotificationCenter.current().requestAuthorization(
+                        options: [.alert, .badge, .sound],
+                    ) { granted, _ in
+                        DispatchQueue.main.async {
+                            if granted {
+                                NotificationScheduler.shared.rescheduleAll(
+                                    morningTime: morning,
+                                    eveningTime: evening,
+                                )
+                            }
+                            onNext()
+                        }
+                    }
+                case .authorized, .provisional, .ephemeral:
+                    NotificationScheduler.shared.rescheduleAll(
+                        morningTime: morning,
+                        eveningTime: evening,
+                    )
+                    onNext()
+                case .denied:
+                    onNext()
+                @unknown default:
+                    onNext()
+                }
+            }
+        }
+    }
+
+    private func configureDatePickerAppearance() {
+        #if canImport(UIKit)
+        UIDatePicker.appearance().minuteInterval = 1
+        UIDatePicker.appearance().tintColor = UIColor(Color(hex: "#8B7DFF"))
+        #endif
     }
 }
