@@ -7,6 +7,9 @@ import { rateLimitState } from "./rate-limit.ts";
 import { modelForSessionType, sessionTypeInstruction } from "./session-types.ts";
 import type { CoachMessageError, CoachMessageInput, CoachMessageSuccess } from "./types.ts";
 
+/** Cap how many prior messages of a session are replayed to the model (token/latency guard). */
+const MAX_HISTORY_MESSAGES = 20;
+
 function buildSystemPrompt(args: {
   memory: Record<string, unknown> | null;
   journalLines: string[];
@@ -127,7 +130,8 @@ export async function coachMessage(
       .from("coach_messages")
       .select("role,message,created_at")
       .eq("session_id", input.session_id)
-      .order("created_at", { ascending: true }),
+      .order("created_at", { ascending: false })
+      .limit(MAX_HISTORY_MESSAGES),
     sb
       .from("user_goals")
       .select("id,category,long_term_goal,goal_name,target_date,daily_action_suggestion,order_index,active")
@@ -183,7 +187,10 @@ export async function coachMessage(
     longTermGoalsBlock,
   });
 
-  const histMsgs: AnthropicMessage[] = ((history ?? []) as { role: string; message: string }[])
+  // History is fetched newest-first (capped); replay it oldest→newest.
+  const historyAsc = [...((history ?? []) as { role: string; message: string; created_at: string }[])]
+    .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+  const histMsgs: AnthropicMessage[] = historyAsc
     .filter((row) => row.role === "user" || row.role === "assistant")
     .map((row) => ({
       role: row.role as "user" | "assistant",
@@ -220,10 +227,12 @@ export async function coachMessage(
   }
 
   const blocks = extractActionJsonBlocks(rawAssistant);
-  const action_taken = await executeCoachActions(sb, userId, input.day_id, day.date, tz, blocks);
   const responseText = stripActionTags(rawAssistant);
   const tokens_used = inputTokens + outputTokens;
 
+  // Persist the exchange BEFORE executing any side-effectful coach actions
+  // (add_goal, update_schedule, start_focus_block, ...). Otherwise an action
+  // could fire while the conversation that produced it is never recorded.
   const { error: insUserErr } = await sb.from("coach_messages").insert({
     user_id: userId,
     session_id: input.session_id,
@@ -249,6 +258,8 @@ export async function coachMessage(
   if (insAsstErr) {
     return { data: null, error: { message: insAsstErr.message, code: insAsstErr.code, detail: insAsstErr.details ?? undefined } };
   }
+
+  const action_taken = await executeCoachActions(sb, userId, input.day_id, day.date, tz, blocks);
 
   return {
     data: {
