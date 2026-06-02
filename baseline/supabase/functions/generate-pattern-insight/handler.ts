@@ -159,6 +159,23 @@ export async function generatePatternInsight(
     .single();
 
   if (insErr || !inserted) {
+    // Lost a concurrent generation race: another request already inserted this
+    // week's insight. Return the winning row instead of erroring.
+    if (insErr?.code === "23505") {
+      const { data: dupRow } = await userSb
+        .from("pattern_insights")
+        .select("id, insight_text, week_start")
+        .eq("user_id", userId)
+        .eq("week_start", weekMonday)
+        .maybeSingle();
+      if (dupRow) {
+        const row = dupRow as { id: string; insight_text: string; week_start: string };
+        return {
+          data: { insight_id: row.id, week_start: row.week_start, insight_text: row.insight_text, duplicate: true },
+          error: null,
+        };
+      }
+    }
     return {
       data: null,
       error: { message: insErr?.message ?? "Insert failed", code: insErr?.code ?? "insert_failed", detail: insErr?.details ?? undefined },
