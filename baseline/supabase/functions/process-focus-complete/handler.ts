@@ -4,6 +4,7 @@ import { incrementStreak } from "../_shared/streak.ts";
 
 export type ProcessFocusCompleteInput = {
   duration_minutes: number;
+  client_session_id?: string;
 };
 
 export function parseProcessFocusCompleteBody(raw: unknown):
@@ -22,7 +23,11 @@ export function parseProcessFocusCompleteBody(raw: unknown):
   if (!Number.isFinite(duration_minutes) || duration_minutes < 0) {
     return { ok: false, error: "duration_minutes must be a non-negative number" };
   }
-  return { ok: true, value: { duration_minutes } };
+  const rawSessionId = o.client_session_id ?? o.clientSessionId;
+  const client_session_id = typeof rawSessionId === "string" && rawSessionId.length > 0
+    ? rawSessionId
+    : undefined;
+  return { ok: true, value: { duration_minutes, client_session_id } };
 }
 
 export async function processFocusComplete(
@@ -49,13 +54,20 @@ export async function processFocusComplete(
   const today = calendarToday(new Date(), tz);
   const completedAt = new Date().toISOString();
 
-  const { error: sessionErr } = await serviceSb.from("focus_sessions").insert({
+  const sessionRow: Record<string, unknown> = {
     user_id: userId,
     duration_minutes: Math.round(input.duration_minutes),
     completed_at: completedAt,
-  });
+  };
+  if (input.client_session_id) {
+    sessionRow.client_session_id = input.client_session_id;
+  }
 
-  if (sessionErr) {
+  const { error: sessionErr } = await serviceSb.from("focus_sessions").insert(sessionRow);
+
+  // 23505 = duplicate submission of the same client session; treat as a no-op insert.
+  // The streak increment below is itself idempotent per calendar day.
+  if (sessionErr && sessionErr.code !== "23505") {
     throw new Error(sessionErr.message);
   }
 

@@ -5,15 +5,18 @@ import Supabase
 enum EdgeFunctionsService {
     private static let client = SupabaseBootstrap.makeClient()
 
-    static func processFocusComplete(durationMinutes: Int) async {
+    static func processFocusComplete(durationMinutes: Int, clientSessionId: UUID = UUID()) async {
         guard durationMinutes >= 10 else { return }
         struct Body: Encodable {
             let durationMinutes: Int
+            let clientSessionId: String
         }
         do {
             _ = try await client.functions.invoke(
                 "process-focus-complete",
-                options: FunctionInvokeOptions(body: Body(durationMinutes: durationMinutes)),
+                options: FunctionInvokeOptions(
+                    body: Body(durationMinutes: durationMinutes, clientSessionId: clientSessionId.uuidString),
+                ),
             )
         } catch {
             // Expected until Supabase auth session is wired.

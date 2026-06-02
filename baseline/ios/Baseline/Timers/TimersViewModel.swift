@@ -174,8 +174,12 @@ final class TimersViewModel: ObservableObject {
 
     private func handleSessionComplete() {
         let durationMinutes = selectedDuration
+        let sessionId = UUID()
         Task {
-            await EdgeFunctionsService.processFocusComplete(durationMinutes: durationMinutes)
+            await EdgeFunctionsService.processFocusComplete(
+                durationMinutes: durationMinutes,
+                clientSessionId: sessionId,
+            )
         }
     }
 }
