@@ -57,7 +57,7 @@ Deno.serve(async (req) => {
       return json({ success: false, message: result.message }, 400);
     }
 
-    return json({ success: true }, 200);
+    return json({ success: true, email_sent: result.email_sent, email_error: result.email_error }, 200);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return json({ success: false, message: msg }, 500);
