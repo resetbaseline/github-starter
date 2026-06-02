@@ -210,6 +210,34 @@ export async function generateIdentityMirror(
     .single();
 
   if (insErr || !inserted) {
+    // Lost a concurrent generation race: another request already inserted this
+    // month's mirror. Return the winning row instead of erroring.
+    if (insErr?.code === "23505") {
+      const { data: dupRow } = await userSb
+        .from("identity_mirror")
+        .select("id, portrait_text, month_start, stats_summary")
+        .eq("user_id", userId)
+        .eq("month_start", monthStart)
+        .maybeSingle();
+      if (dupRow) {
+        const row = dupRow as {
+          id: string;
+          portrait_text: string;
+          month_start: string;
+          stats_summary: Record<string, unknown> | null;
+        };
+        return {
+          data: {
+            mirror_id: row.id,
+            month_start: row.month_start,
+            portrait_text: row.portrait_text,
+            stats_summary: (row.stats_summary ?? {}) as Record<string, unknown>,
+            duplicate: true,
+          },
+          error: null,
+        };
+      }
+    }
     return {
       data: null,
       error: { message: insErr?.message ?? "Insert failed", code: insErr?.code ?? "insert_failed", detail: insErr?.details ?? undefined },
