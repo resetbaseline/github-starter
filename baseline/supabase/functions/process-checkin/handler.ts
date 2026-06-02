@@ -241,31 +241,45 @@ export async function processCheckIn(
         return { data: null, error: { message: msg, code: "streak_update_failed" } };
       }
     } else if (streakBreaksUnlessFreeze(dayStatus)) {
-      if (input.streak_freeze_used) {
-        const { error: fu } = await serviceSb
-          .from("users")
-          .update({
-            streak_freeze_count: userFreeze.streak_freeze_count - 1,
-            streak_freeze_used_this_month: userFreeze.streak_freeze_used_this_month + 1,
-          })
-          .eq("id", userId);
-        if (fu) {
-          return { data: null, error: { message: fu.message, code: fu.code, detail: fu.details ?? undefined } };
-        }
-      } else {
-        const tomorrow = addCalendarDays(day.date, 1);
-        const { error: stUp } = await serviceSb
-          .from("streaks")
-          .update({
-            current_count: 0,
-            start_date: tomorrow,
-            end_date: null,
-            active: true,
-            last_updated_date: null,
-          })
-          .eq("user_id", userId);
-        if (stUp) {
-          return { data: null, error: { message: stUp.message, code: stUp.code, detail: stUp.details ?? undefined } };
+      // Earned-day protection: if the day was already counted via an anchor or focus
+      // session, a light check-in must not break the streak (any one signal counts).
+      const { data: earned, error: earnedErr } = await serviceSb
+        .from("streak_activity_log")
+        .select("id")
+        .eq("user_id", userId)
+        .eq("activity_date", day.date)
+        .maybeSingle();
+      if (earnedErr) {
+        return { data: null, error: { message: earnedErr.message, code: earnedErr.code, detail: earnedErr.details ?? undefined } };
+      }
+
+      if (!earned) {
+        if (input.streak_freeze_used) {
+          const { error: fu } = await serviceSb
+            .from("users")
+            .update({
+              streak_freeze_count: userFreeze.streak_freeze_count - 1,
+              streak_freeze_used_this_month: userFreeze.streak_freeze_used_this_month + 1,
+            })
+            .eq("id", userId);
+          if (fu) {
+            return { data: null, error: { message: fu.message, code: fu.code, detail: fu.details ?? undefined } };
+          }
+        } else {
+          const tomorrow = addCalendarDays(day.date, 1);
+          const { error: stUp } = await serviceSb
+            .from("streaks")
+            .update({
+              current_count: 0,
+              start_date: tomorrow,
+              end_date: null,
+              active: true,
+              last_updated_date: null,
+            })
+            .eq("user_id", userId);
+          if (stUp) {
+            return { data: null, error: { message: stUp.message, code: stUp.code, detail: stUp.details ?? undefined } };
+          }
         }
       }
     }
@@ -276,6 +290,8 @@ export async function processCheckIn(
       const newPdm = oldPdm + 1;
       const newPdc = oldPdc + 1;
 
+      // Perfect-day counters are still tracked, but no freeze is awarded here.
+      // Freezes are granted only at 7-day streak milestones (see _shared/streak.ts).
       const { error: pErr } = await serviceSb
         .from("streaks")
         .update({
@@ -285,21 +301,6 @@ export async function processCheckIn(
         .eq("user_id", userId);
       if (pErr) {
         return { data: null, error: { message: pErr.message, code: pErr.code, detail: pErr.details ?? undefined } };
-      }
-
-      const { data: uFreeze2, error: u2Err } = await serviceSb.from("users").select("streak_freeze_count").eq("id", userId).single();
-      if (u2Err) {
-        return { data: null, error: { message: u2Err.message, code: u2Err.code, detail: u2Err.details ?? undefined } };
-      }
-      const fc = (uFreeze2 as { streak_freeze_count: number }).streak_freeze_count;
-      if (newPdm > oldPdm && fc < 3) {
-        const { error: awErr } = await serviceSb
-          .from("users")
-          .update({ streak_freeze_count: fc + 1 })
-          .eq("id", userId);
-        if (awErr) {
-          return { data: null, error: { message: awErr.message, code: awErr.code, detail: awErr.details ?? undefined } };
-        }
       }
     }
   }
