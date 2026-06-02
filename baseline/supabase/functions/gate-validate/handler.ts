@@ -165,7 +165,19 @@ export async function gateValidate(
     coachResponse = coach.content.trim();
   }
 
-  const triggerOrdinal = priorCount + 1;
+  // Atomically bump the per-day counter and use the returned value as the
+  // authoritative ordinal. This avoids the lost-update race of reading
+  // gate_triggers up front and writing priorCount + 1 at the end.
+  const { data: bumped, error: bumpErr } = await serviceSb.rpc("increment_gate_triggers", {
+    p_day_id: day.id,
+    p_user_id: userId,
+  });
+
+  if (bumpErr) {
+    return { data: null, error: { message: bumpErr.message, code: bumpErr.code, detail: bumpErr.details ?? undefined } };
+  }
+
+  const triggerOrdinal = typeof bumped === "number" ? bumped : priorCount + 1;
   const rwc = wordCount(input.stated_reason);
 
   const { data: inserted, error: insErr } = await serviceSb
@@ -196,16 +208,6 @@ export async function gateValidate(
   }
 
   const gateTriggerId = (inserted as { id: string }).id;
-
-  const { error: upErr } = await serviceSb
-    .from("days")
-    .update({ gate_triggers: priorCount + 1 })
-    .eq("id", day.id)
-    .eq("user_id", userId);
-
-  if (upErr) {
-    return { data: null, error: { message: upErr.message, code: upErr.code, detail: upErr.details ?? undefined } };
-  }
 
   return {
     data: {

@@ -42,7 +42,9 @@ export async function gateResolve(
 
   const resolved_at = new Date().toISOString();
 
-  const { error: upErr } = await serviceSb
+  // Guard the update on resolved_at IS NULL so two concurrent resolutions cannot
+  // both pass the earlier check and double-count the dismissal below.
+  const { data: updatedRows, error: upErr } = await serviceSb
     .from("gate_triggers")
     .update({
       time_used_seconds: input.time_used_seconds,
@@ -52,25 +54,25 @@ export async function gateResolve(
       mismatch_flagged,
     })
     .eq("id", input.gate_trigger_id)
-    .eq("user_id", userId);
+    .eq("user_id", userId)
+    .is("resolved_at", null)
+    .select("id");
 
   if (upErr) {
     return { data: null, error: { message: upErr.message, code: upErr.code, detail: upErr.details ?? undefined } };
   }
 
+  if (!updatedRows || updatedRows.length === 0) {
+    return { data: null, error: { message: "Gate trigger already resolved", code: "already_resolved" } };
+  }
+
   if (input.outcome === "dismissed") {
-    const { data: dayRow, error: dErr } = await serviceSb.from("days").select("gate_dismissals").eq("id", trigger.day_id).eq("user_id", userId).maybeSingle();
+    const { error: dErr } = await serviceSb.rpc("increment_gate_dismissals", {
+      p_day_id: trigger.day_id,
+      p_user_id: userId,
+    });
     if (dErr) {
       return { data: null, error: { message: dErr.message, code: dErr.code, detail: dErr.details ?? undefined } };
-    }
-    const current = (dayRow as { gate_dismissals: number } | null)?.gate_dismissals ?? 0;
-    const { error: dayUpErr } = await serviceSb
-      .from("days")
-      .update({ gate_dismissals: current + 1 })
-      .eq("id", trigger.day_id)
-      .eq("user_id", userId);
-    if (dayUpErr) {
-      return { data: null, error: { message: dayUpErr.message, code: dayUpErr.code, detail: dayUpErr.details ?? undefined } };
     }
   }
 
