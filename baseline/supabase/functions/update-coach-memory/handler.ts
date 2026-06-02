@@ -218,14 +218,23 @@ export async function updateCoachMemory(
     .eq("user_id", userId)
     .maybeSingle();
 
-  if (pErr || !profileRow) {
-    return {
-      data: null,
-      error: { message: pErr?.message ?? "coach_memory_profile not found", code: pErr?.code ?? "not_found" },
-    };
+  if (pErr) {
+    return { data: null, error: { message: pErr.message, code: pErr.code, detail: pErr.details ?? undefined } };
   }
 
-  const profile = profileRow as MemoryProfileRow;
+  // The profile is normally created by the handle_new_user trigger, but may be
+  // missing for legacy users or if the trigger never ran. Fall back to an empty
+  // profile; the upsert below creates the row so memory capture still works.
+  const profile = (profileRow ?? {
+    identity_summary: null,
+    goals_summary: null,
+    top_struggles: null,
+    focus_window_best: null,
+    highest_risk_window: null,
+    gate_pattern_summary: null,
+    coach_notes: null,
+    wins_recent: null,
+  }) as MemoryProfileRow;
   const goalMap = normalizeGoalsSummary(profile.goals_summary);
   const goalUpdates: GoalEntry[] = (facts.goal_updates ?? [])
     .filter((x) => x && typeof x.goal_name === "string" && typeof x.current_status === "string")
@@ -254,7 +263,9 @@ export async function updateCoachMemory(
   const gateSum = facts.gate_pattern_summary != null ? String(facts.gate_pattern_summary).trim() : "";
   if (gateSum) patch.gate_pattern_summary = gateSum;
 
-  const { error: upMemErr } = await serviceSb.from("coach_memory_profile").update(patch).eq("user_id", userId);
+  const { error: upMemErr } = await serviceSb
+    .from("coach_memory_profile")
+    .upsert({ user_id: userId, ...patch }, { onConflict: "user_id" });
   if (upMemErr) {
     return { data: null, error: { message: upMemErr.message, code: upMemErr.code, detail: upMemErr.details ?? undefined } };
   }
