@@ -70,7 +70,8 @@ function escapeHtml(value: string): string {
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")
     .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;");
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
 }
 
 function buildEmailHtml(input: SendSupportEmailInput): string {
@@ -88,11 +89,13 @@ function buildEmailHtml(input: SendSupportEmailInput): string {
   `.trim();
 }
 
-async function sendResendEmail(input: SendSupportEmailInput): Promise<void> {
+type EmailResult = { sent: boolean; error?: string };
+
+async function sendResendEmail(input: SendSupportEmailInput): Promise<EmailResult> {
   const apiKey = Deno.env.get("RESEND_API_KEY")?.trim();
   if (!apiKey) {
     console.error("send-support-email: RESEND_API_KEY is not set");
-    return;
+    return { sent: false, error: "RESEND_API_KEY is not set" };
   }
 
   const payload: Record<string, unknown> = {
@@ -124,17 +127,23 @@ async function sendResendEmail(input: SendSupportEmailInput): Promise<void> {
     if (!res.ok) {
       const body = await res.text();
       console.error("send-support-email: Resend API error", res.status, body);
+      return { sent: false, error: `Resend API error ${res.status}: ${body.slice(0, 300)}` };
     }
+    return { sent: true };
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("send-support-email: Resend request failed", msg);
+    return { sent: false, error: msg };
   }
 }
 
 export async function sendSupportEmail(
   db: SupabaseClient,
   input: SendSupportEmailInput,
-): Promise<{ success: true } | { success: false; message: string }> {
+): Promise<
+  | { success: true; email_sent: boolean; email_error?: string }
+  | { success: false; message: string }
+> {
   const { error: insertErr } = await db.from("support_tickets").insert({
     user_id: input.userId,
     category: input.category,
@@ -148,7 +157,10 @@ export async function sendSupportEmail(
     return { success: false, message: insertErr.message };
   }
 
-  await sendResendEmail(input);
+  // The ticket is persisted regardless, so we keep success: true even if the
+  // email fails — but we surface the email outcome so a failed delivery is not
+  // silently swallowed (it would otherwise never reach the support inbox).
+  const email = await sendResendEmail(input);
 
-  return { success: true };
+  return { success: true, email_sent: email.sent, email_error: email.error };
 }
