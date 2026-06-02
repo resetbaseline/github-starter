@@ -25,6 +25,8 @@ struct OnboardingSetupView: View {
         return Calendar.current.date(from: components) ?? Date()
     }()
 
+    @State private var showClosingTransition = false
+
     var body: some View {
         ZStack {
             Color(hex: "#0A0A0A")
@@ -59,6 +61,12 @@ struct OnboardingSetupView: View {
         }
         .onAppear {
             configureDatePickerAppearance()
+        }
+        .fullScreenCover(isPresented: $showClosingTransition) {
+            ClosingTransitionView {
+                showClosingTransition = false
+                onNext()
+            }
         }
     }
 
@@ -204,12 +212,10 @@ struct OnboardingSetupView: View {
                     ) { granted, _ in
                         DispatchQueue.main.async {
                             if granted {
-                                NotificationScheduler.shared.rescheduleAll(
-                                    morningTime: morning,
-                                    eveningTime: evening,
-                                )
+                                NotificationScheduler.shared.scheduleMorningNotification(at: morning)
+                                NotificationScheduler.shared.scheduleEveningCheckin(at: evening)
                             }
-                            onNext()
+                            showClosingTransition = true
                         }
                     }
                 case .authorized, .provisional, .ephemeral:
@@ -217,11 +223,9 @@ struct OnboardingSetupView: View {
                         morningTime: morning,
                         eveningTime: evening,
                     )
-                    onNext()
-                case .denied:
-                    onNext()
-                @unknown default:
-                    onNext()
+                    showClosingTransition = true
+                default:
+                    showClosingTransition = true
                 }
             }
         }
@@ -232,5 +236,74 @@ struct OnboardingSetupView: View {
         UIDatePicker.appearance().minuteInterval = 1
         UIDatePicker.appearance().tintColor = UIColor(Color(hex: "#8B7DFF"))
         #endif
+    }
+}
+
+// MARK: - Closing transition
+
+private struct ClosingTransitionView: View {
+    let onComplete: () -> Void
+
+    @State private var logoOpacity: Double = 0
+    @State private var lineOpacity: Double = 0
+    @State private var glowOpacity: Double = 0
+
+    var body: some View {
+        ZStack {
+            Color(hex: "#0A0A0A")
+                .ignoresSafeArea()
+
+            VStack(spacing: 20) {
+                ZStack {
+                    Circle()
+                        .fill(
+                            RadialGradient(
+                                colors: [
+                                    Color(hex: "#3D2070").opacity(0.4),
+                                    Color.clear,
+                                ],
+                                center: .center,
+                                startRadius: 0,
+                                endRadius: 80,
+                            ),
+                        )
+                        .frame(width: 160, height: 160)
+                        .opacity(glowOpacity)
+
+                    CoachPeakIcon(size: 48)
+                        .opacity(logoOpacity)
+                }
+
+                Text("Your baseline starts now.")
+                    .font(.custom("NewYorkSmall-Light", size: 22))
+                    .foregroundStyle(Color.white)
+                    .multilineTextAlignment(.center)
+                    .opacity(lineOpacity)
+            }
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 0.8)) {
+                logoOpacity = 1.0
+                glowOpacity = 1.0
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                withAnimation(.easeInOut(duration: 0.8)) {
+                    lineOpacity = 1.0
+                }
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2.5) {
+                withAnimation(.easeInOut(duration: 0.6)) {
+                    logoOpacity = 0
+                    glowOpacity = 0
+                    lineOpacity = 0
+                }
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3.1) {
+                onComplete()
+            }
+        }
     }
 }

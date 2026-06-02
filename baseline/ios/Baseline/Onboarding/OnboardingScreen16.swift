@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Screen 16 placeholder — transitions into the main app after setup completes.
+/// Final onboarding step — completes into the main app shell (after setup closing transition).
 struct OnboardingScreen16: View {
     @EnvironmentObject private var auth: AuthManager
     @EnvironmentObject private var onboarding: OnboardingViewModel
@@ -8,12 +8,10 @@ struct OnboardingScreen16: View {
     var body: some View {
         Color(hex: "#0A0A0A")
             .ignoresSafeArea()
-            .task {
-                enterApp()
-            }
+            .onAppear(perform: completeOnboarding)
     }
 
-    private func enterApp() {
+    private func completeOnboarding() {
         let trimmed = onboarding.preferredName.trimmingCharacters(in: .whitespacesAndNewlines)
         auth.completeOnboarding(
             preferredName: trimmed.isEmpty ? nil : trimmed,

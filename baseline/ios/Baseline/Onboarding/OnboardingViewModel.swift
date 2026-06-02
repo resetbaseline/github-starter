@@ -7,6 +7,10 @@ import SwiftUI
 final class OnboardingViewModel: ObservableObject {
     static let totalSteps = 16
 
+    // Message to Future Self is surfaced by the coach on Day 7 (see RES-66)
+    // See RES-64 for feature implementation details
+    // The feature lives in Profile → Settings → Message to Future Self (already built)
+
     /// 0…14 intro pages, 15 final screen.
     @Published var step: Int = 0
 

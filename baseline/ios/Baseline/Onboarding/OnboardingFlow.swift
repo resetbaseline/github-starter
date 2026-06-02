@@ -71,6 +71,7 @@ struct OnboardingFlow: View {
                     onBack: { onboarding.goBack() },
                 )
                     .tag(13)
+                // Setup → closing transition (fullScreenCover) → Screen 16 completes onboarding
                 OnboardingSetupView(
                     onNext: { onboarding.goNext() },
                     onBack: { onboarding.goBack() },
